@@ -200,20 +200,39 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
         });
     }
 
-    const csvContent = [
-        ['Date/Time', 'Player', 'Staff', 'Type', 'Points Before', 'Points', 'Balance After'],
-        ...transactionsToExport.map(tx => [
-            format(new Date(tx.date), "Pp"),
-            tx.player,
-            tx.staff,
-            tx.type,
-            tx.balanceBefore.toFixed(2),
-            tx.points.toFixed(2),
-            tx.balanceAfter.toFixed(2)
-        ])
-    ].map(row => row.join(',')).join('\n');
+    if (transactionsToExport.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "No Data",
+            description: "There are no transactions within the selected date range to export.",
+        });
+        return;
+    }
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    // Create CSV with separate Date and Time columns
+    const csvHeaders = ['Date', 'Time', 'Player', 'Staff', 'Type', 'Points Before', 'Points', 'Balance After'];
+    const csvRows = [
+        csvHeaders.join(','),
+        ...transactionsToExport.map(tx => {
+            const txDate = new Date(tx.date);
+            const dateStr = format(txDate, "yyyy-MM-dd");
+            const timeStr = format(txDate, "h:mm a");
+            
+            return [
+                dateStr,
+                timeStr,
+                `"${tx.player}"`,
+                `"${tx.staff}"`,
+                tx.type,
+                tx.balanceBefore.toFixed(2),
+                tx.points.toFixed(2),
+                tx.balanceAfter.toFixed(2)
+            ].join(',');
+        })
+    ];
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -222,6 +241,11 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+    
+    toast({
+        title: "Export Successful",
+        description: `Exported ${transactionsToExport.length} transactions to CSV.`,
+    });
     
     setIsDateRangePickerOpen(false);
   };

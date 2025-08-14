@@ -348,20 +348,27 @@ export function PaymentsTable({ title, description }: { title: string, descripti
     }
 
 
-    const csvHeaders = ["Transaction ID", "Date", "Player", "Type", "Method", "Tag", "Amount", "Status", "Staff"];
+    const csvHeaders = ["Transaction ID", "Date", "Time", "Player", "Type", "Method", "Tag", "Amount", "Status", "Staff"];
     const csvRows = [
       csvHeaders.join(','),
-      ...transactionsToExport.map(tx => [
-        tx.id,
-        format(new Date(tx.date), "yyyy-MM-dd HH:mm:ss"),
-        `"${tx.playerName}"`,
-        tx.type,
-        tx.paymentMethod || 'N/A',
-        tx.paymentTag || 'N/A',
-        tx.amount,
-        tx.status,
-        `"${tx.staffName}"`
-      ].join(','))
+      ...transactionsToExport.map(tx => {
+        const txDate = new Date(tx.date);
+        const dateStr = format(txDate, "yyyy-MM-dd");
+        const timeStr = format(txDate, "h:mm a");
+        
+        return [
+          tx.id,
+          dateStr,
+          timeStr,
+          `"${tx.playerName}"`,
+          tx.type,
+          tx.paymentMethod || 'N/A',
+          tx.paymentTag || 'N/A',
+          tx.amount,
+          tx.status,
+          `"${tx.staffName}"`
+        ].join(',');
+      })
     ];
     
     const csvContent = csvRows.join('\n');
