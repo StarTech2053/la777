@@ -7,6 +7,5 @@ runConfig:
   maxInstances: 1
 
 buildConfig:
-  buildCommand: "npm run build:apphosting"
-  startCommand: "npm run start:apphosting"
-  rootDir: "."
+  buildCommand: "npm install && npm run build"
+  startCommand: "npm start"

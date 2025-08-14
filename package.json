@@ -1,7 +1,8 @@
 {
-  "name": "nextn",
-  "version": "0.1.0",
+  "name": "la777-casino-management",
+  "version": "1.0.0",
   "private": true,
+  "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "dev:public": "next dev --turbopack -p 9002 --hostname 0.0.0.0",
@@ -12,7 +13,7 @@
     "build:firebase": "next build && next export",
     "build:static": "node build-static.js",
     "build:apphosting": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-3000}",
     "start:apphosting": "node start-server.js",
     "start:local": "next start -p 3000",
     "start:windows": "set PORT=3000 && next start -p %PORT%",
@@ -22,6 +23,7 @@
     "deploy:apphosting": "firebase deploy --only apphosting",
     "verify:firebase": "node firebase-deploy.config.js",
     "deploy:verified": "npm run verify:firebase && firebase deploy --only apphosting",
+    "deploy:simple": "node deploy-simple.js",
     "lint": "next lint",
     "analyze": "ANALYZE=true npm run build",
     "build:analyze": "cross-env ANALYZE=true next build",

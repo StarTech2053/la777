@@ -23,7 +23,10 @@
       "**/.next/**",
       "**/.git/**",
       "**/docs/**",
-      "**/public/**"
+      "**/public/**",
+      "**/.firebase/**",
+      "**/firebase-debug.log",
+      "**/FIREBASE_VERIFICATION.md"
     ]
   },
   "firestore": {
