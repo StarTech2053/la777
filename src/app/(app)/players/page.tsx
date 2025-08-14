@@ -5,7 +5,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PlayersTable } from "@/components/players/players-table";
-import { UserPlus, Trash2, RefreshCw } from "lucide-react";
+import { UserPlus, Trash2, Users, UserCheck, UserX, UserMinus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -43,11 +43,12 @@ export default function PlayersPage() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'Active' | 'Inactive' | 'Blocked' | 'New'>('all');
   
   const router = useRouter();
   const { toast } = useToast();
   const { role } = useAuth();
-  const { players, isLoading, refreshPlayers } = usePlayersStore();
+  const { players, isLoading, refreshPlayers, statusCounts } = usePlayersStore();
   const { data: transactions } = useFirebaseCollection<Transaction>('transactions', { orderBy: 'date' });
   
   const selectionCount = selectedPlayerIds.size;
@@ -203,11 +204,29 @@ export default function PlayersPage() {
   }, [players, transactions]);
 
   const filteredPlayers = React.useMemo(() => {
-    if (!searchQuery) return sortedPlayers;
-    return sortedPlayers.filter(player =>
-      player.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [sortedPlayers, searchQuery]);
+    let filtered = sortedPlayers;
+    
+    // Apply status filter
+    if (statusFilter === 'Active' || statusFilter === 'Inactive' || statusFilter === 'Blocked') {
+      filtered = filtered.filter(player => player.status === statusFilter);
+    } else if (statusFilter === 'New') {
+      const now = new Date().getTime();
+      const TWO_MINUTES = 2 * 60 * 1000;
+      filtered = filtered.filter(player => {
+        const joinTime = new Date(player.joinDate).getTime();
+        return now - joinTime < TWO_MINUTES;
+      });
+    }
+    
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(player =>
+        player.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    return filtered;
+  }, [sortedPlayers, searchQuery, statusFilter]);
   
   const refreshAndClose = async () => {
     setIsTransactionOpen(false);
@@ -267,10 +286,10 @@ export default function PlayersPage() {
   const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
   const currentPlayers = filteredPlayers.slice(indexOfFirstItem, indexOfLastItem);
   
-  // Reset page to 1 when search query changes
+  // Reset page to 1 when search query or status filter changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, statusFilter]);
 
   // Debug logging for table data
   console.log("🔍 Table data debug:", {
@@ -296,12 +315,56 @@ export default function PlayersPage() {
         </div>
         <div className="flex gap-2">
           <Button 
-            variant="outline" 
-            onClick={handleManualRefresh}
-            disabled={isRefreshing}
+            variant={statusFilter === 'Active' ? "default" : "outline"}
+            className={`flex items-center gap-2 ${
+              statusFilter === 'Active' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'hover:bg-green-50 hover:text-green-600 border-green-200'
+            }`}
+            onClick={() => setStatusFilter(statusFilter === 'Active' ? 'all' : 'Active')}
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
+            <Users className="h-4 w-4" />
+            Active Players ({statusCounts.Active})
+          </Button>
+          <Button 
+            variant={statusFilter === 'New' ? "default" : "outline"}
+            className={`flex items-center gap-2 ${
+              statusFilter === 'New' 
+                ? 'bg-sky-600 hover:bg-sky-700 text-white' 
+                : 'hover:bg-sky-50 hover:text-sky-600 border-sky-200 text-sky-600'
+            }`}
+            onClick={() => setStatusFilter(statusFilter === 'New' ? 'all' : 'New')}
+          >
+            <UserCheck className="h-4 w-4" />
+            New Players ({React.useMemo(() => {
+              const now = new Date().getTime();
+              const TWO_MINUTES = 2 * 60 * 1000;
+              return players.filter(p => now - new Date(p.joinDate).getTime() < TWO_MINUTES).length;
+            }, [players])})
+          </Button>
+          <Button 
+            variant={statusFilter === 'Inactive' ? "default" : "outline"}
+            className={`flex items-center gap-2 ${
+              statusFilter === 'Inactive' 
+                ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
+                : 'hover:bg-yellow-50 hover:text-yellow-600 border-yellow-200'
+            }`}
+            onClick={() => setStatusFilter(statusFilter === 'Inactive' ? 'all' : 'Inactive')}
+          >
+            <UserX className="h-4 w-4" />
+            InActive Players ({statusCounts.Inactive})
+          </Button>
+          <Button 
+            variant={statusFilter === 'Blocked' ? "default" : "outline"}
+            className={`flex items-center gap-2 ${
+              statusFilter === 'Blocked' 
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'hover:bg-red-50 hover:text-red-600 border-red-200'
+            }`}
+            onClick={() => setStatusFilter(statusFilter === 'Blocked' ? 'all' : 'Blocked')}
+          >
+            <UserMinus className="h-4 w-4" />
+            Blocked Players ({statusCounts.Blocked})
           </Button>
           <Button variant="destructive" disabled={isDeleteDisabled} onClick={() => handleDelete()}>
             <Trash2 className="mr-2 h-4 w-4" /> Delete
