@@ -1,0 +1,21 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://192.168.40.254:3000",
+      "http://192.168.40.254:9002",
+      "https://panelpilot-pro.web.app",
+      "https://panelpilot-pro.firebaseapp.com"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type",
+      "Access-Control-Allow-Origin",
+      "Access-Control-Allow-Methods",
+      "Access-Control-Allow-Headers",
+      "Access-Control-Max-Age"
+    ]
+  }
+]
