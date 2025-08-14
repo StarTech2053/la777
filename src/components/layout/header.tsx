@@ -20,11 +20,13 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { RealTimeNotification, useRealTimeStatus } from "@/components/ui/real-time-notification";
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const { role, name } = useAuth();
+  const { status, lastUpdate } = useRealTimeStatus();
 
   const handleLogout = async () => {
     try {
@@ -67,6 +69,7 @@ export function Header() {
         {/* Page titles are now handled within their respective page components */}
       </div>
       <div className="flex items-center gap-4">
+        <RealTimeNotification status={status} lastUpdate={lastUpdate} className="hidden md:flex" />
         <span className="text-sm text-muted-foreground hidden md:inline-block">Welcome: {name} [{role}]</span>
         <Button
           variant="outline"

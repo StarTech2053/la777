@@ -85,10 +85,13 @@ export default function PlayerProfilePage() {
     const loadPlayerData = useCallback(() => {
         if (!id) return;
 
+        console.log("🔄 Setting up real-time player data listeners...");
+        
         const playerDocRef = doc(db, 'players', id);
         const unsubscribePlayer = onSnapshot(playerDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const playerData = { id: docSnap.id, ...docSnap.data() } as Player;
+                console.log("✅ Real-time player update received:", playerData.name);
                 
                 const transactionsQuery = query(
                     collection(db, 'transactions'), 
@@ -98,6 +101,7 @@ export default function PlayerProfilePage() {
 
                 const unsubscribeTransactions = onSnapshot(transactionsQuery, (querySnapshot) => {
                     const playerTransactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+                    console.log("✅ Real-time transactions update received:", playerTransactions.length, "transactions");
 
                     // Recalculate stats based on transactions
                     const tDeposit = playerTransactions.filter(t => t.type === 'Deposit').reduce((sum, t) => sum + t.amount, 0);
@@ -146,6 +150,7 @@ export default function PlayerProfilePage() {
                 return () => unsubscribeTransactions();
 
             } else {
+                console.log("📄 Player document does not exist");
                 setPlayer(null);
                 setIsLoading(false);
             }
