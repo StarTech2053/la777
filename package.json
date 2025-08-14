@@ -20,6 +20,8 @@
     "deploy": "node deploy-firebase.js",
     "deploy:hosting": "npm run build:static && firebase deploy --only hosting",
     "deploy:apphosting": "firebase deploy --only apphosting",
+    "verify:firebase": "node firebase-deploy.config.js",
+    "deploy:verified": "npm run verify:firebase && firebase deploy --only apphosting",
     "lint": "next lint",
     "analyze": "ANALYZE=true npm run build",
     "build:analyze": "cross-env ANALYZE=true next build",

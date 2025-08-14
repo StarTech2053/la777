@@ -9,3 +9,4 @@ runConfig:
 buildConfig:
   buildCommand: "npm run build:apphosting"
   startCommand: "npm run start:apphosting"
+  rootDir: "."

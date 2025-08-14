@@ -20,7 +20,10 @@
       "**/.*",
       "**/node_modules/**",
       "**/out/**",
-      "**/.next/**"
+      "**/.next/**",
+      "**/.git/**",
+      "**/docs/**",
+      "**/public/**"
     ]
   },
   "firestore": {
