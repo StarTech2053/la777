@@ -95,10 +95,19 @@ export function EditPlayerDialog({
         playerId: player.id,
         referredBy: data.referredBy === 'none' ? undefined : data.referredBy,
       }
+      
+      console.log("📝 Submitting player update:", submissionData);
       const result = await editPlayer(submissionData);
       
       if (result.success) {
+        toast({
+          variant: "success",
+          title: "Success",
+          description: "Player updated successfully!",
+        });
         onSuccess();
+      } else {
+        throw new Error(result.error || "Failed to update player");
       }
       
     } catch (error) {

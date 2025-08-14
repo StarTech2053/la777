@@ -105,7 +105,23 @@ export default function PlayerProfilePage() {
                     const tFreePlay = playerTransactions.filter(t => t.type === 'Freeplay').reduce((sum, t) => sum + t.amount, 0);
                     const tBonusPlay = playerTransactions.filter(t => t.type === 'Bonusplay').reduce((sum, t) => sum + t.amount, 0);
                     const tReferralBonus = playerTransactions.filter(t => t.type === 'Referral').reduce((sum, t) => sum + t.amount, 0);
-                    const tDepositBonus = playerTransactions.filter(t => t.type === 'Deposit').reduce((sum, t) => sum + (t.depositBonus || 0), 0);
+                    
+                    // Calculate deposit bonus correctly
+                    const tDepositBonus = playerTransactions.filter(t => t.type === 'Deposit').reduce((sum, t) => {
+                        // If depositBonus field exists, use it (it's the percentage)
+                        if (t.depositBonus && t.amount) {
+                            const bonusAmount = (t.amount * t.depositBonus / 100);
+                            console.log("💰 Deposit Bonus Calculation:", {
+                                transactionId: t.id,
+                                amount: t.amount,
+                                depositBonusPercent: t.depositBonus,
+                                bonusAmount: bonusAmount
+                            });
+                            return sum + bonusAmount;
+                        }
+                        return sum;
+                    }, 0);
+                    
                     const pAndL = tDeposit - tWithdraw;
                     
                     const updatedPlayer: Player = {

@@ -76,15 +76,25 @@ export async function addPlayer(playerData: any) {
     }
 }
 
-export async function editPlayer(playerId: string, playerData: any) {
+export async function editPlayer(playerData: any) {
     try {
+        const { playerId, ...updateData } = playerData;
         const playerRef = doc(db, 'players', playerId);
+        
+        // Remove undefined values
+        const cleanData = Object.fromEntries(
+            Object.entries(updateData).filter(([_, value]) => value !== undefined)
+        );
+        
         await updateDoc(playerRef, {
-            ...playerData,
+            ...cleanData,
             lastUpdated: new Date().toISOString()
         });
+        
+        console.log("✅ Player updated successfully:", playerId);
         return { success: true };
     } catch (error) {
+        console.error("❌ Error updating player:", error);
         return { success: false, error: error instanceof Error ? error.message : "Failed to edit player" };
     }
 }

@@ -109,6 +109,7 @@ export function PlayersTable({
       tDeposit: 0,
       tWithdraw: 0,
       tBonusPlay: 0,
+      tDepositBonus: 0,
       tReferralBonus: 0,
       pAndL: 0
     };
@@ -134,6 +135,7 @@ export function PlayersTable({
             <TableHead>T-Deposit</TableHead>
             <TableHead>T-Withdraw</TableHead>
             <TableHead>T-Bonus Play</TableHead>
+            <TableHead>T-Deposit Bonus</TableHead>
             <TableHead>T-Referral Bonus</TableHead>
             <TableHead>P&L</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -146,6 +148,7 @@ export function PlayersTable({
                     <TableCell><Checkbox disabled /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
@@ -187,6 +190,7 @@ export function PlayersTable({
                   <TableCell>${stats.tDeposit.toLocaleString()}</TableCell>
                   <TableCell>${stats.tWithdraw.toLocaleString()}</TableCell>
                   <TableCell>{stats.tBonusPlay.toLocaleString()}</TableCell>
+                  <TableCell>${stats.tDepositBonus?.toLocaleString() || '0'}</TableCell>
                   <TableCell>{stats.tReferralBonus.toLocaleString()}</TableCell>
                   <TableCell>${stats.pAndL.toLocaleString()}</TableCell>
                   <TableCell className="text-right">

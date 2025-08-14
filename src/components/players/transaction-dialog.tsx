@@ -124,11 +124,22 @@ export function TransactionDialog({
 
       const transactionType = type === 'deposit' ? 'Deposit' : 'Withdraw';
       
+      // Calculate total amount (deposit + bonus)
+      const depositBonusAmount = data.depositBonus ? (data.amount * data.depositBonus / 100) : 0;
+      const totalAmount = data.amount + depositBonusAmount;
+      
+      console.log("💰 Transaction Details:", {
+        depositAmount: data.amount,
+        depositBonusPercent: data.depositBonus,
+        depositBonusAmount: depositBonusAmount,
+        totalAmount: totalAmount
+      });
+      
       // 🔒 CRITICAL: Balance Validation
       if (transactionType === 'Deposit') {
-        // For deposit: Check if game has sufficient balance
-        if (currentGameBalance < data.amount) {
-          throw new Error(`Insufficient game balance. Game "${data.gameName}" has $${currentGameBalance.toLocaleString()} but deposit amount is $${data.amount.toLocaleString()}.`);
+        // For deposit: Check if game has sufficient balance for total amount
+        if (currentGameBalance < totalAmount) {
+          throw new Error(`Insufficient game balance. Game "${data.gameName}" has $${currentGameBalance.toLocaleString()} but total amount needed is $${totalAmount.toLocaleString()}.`);
         }
       } else { // Withdraw
         // For withdraw: Check if player has sufficient balance (optional - depends on your business logic)
@@ -139,9 +150,9 @@ export function TransactionDialog({
       let gameUpdate: { [key: string]: any } = {};
 
       if (transactionType === 'Deposit') {
-        // ✅ CORRECT LOGIC: Deposit = Money from game to player
+        // ✅ CORRECT LOGIC: Deposit = Money from game to player (total amount including bonus)
         playerUpdate['stats.tDeposit'] = increment(data.amount);
-        gameUpdate['balance'] = increment(-data.amount); // Game balance DECREASES
+        gameUpdate['balance'] = increment(-totalAmount); // Game balance DECREASES by total amount
       } else { // Withdraw
         // ✅ CORRECT LOGIC: Withdraw = Money from player to game
         playerUpdate['stats.tWithdraw'] = increment(data.amount);
@@ -150,7 +161,7 @@ export function TransactionDialog({
       playerUpdate['stats.pAndL'] = increment(transactionType === 'Deposit' ? data.amount : -data.amount);
 
       // 🔒 CRITICAL: Double-check final balance won't be negative
-      const finalGameBalance = currentGameBalance + (transactionType === 'Deposit' ? -data.amount : data.amount);
+      const finalGameBalance = currentGameBalance + (transactionType === 'Deposit' ? -totalAmount : data.amount);
       if (finalGameBalance < 0) {
         throw new Error(`Transaction would result in negative game balance ($${finalGameBalance.toLocaleString()}). This is not allowed.`);
       }
@@ -170,14 +181,18 @@ export function TransactionDialog({
         status: 'Approved' as const,
         gameBalanceBefore: currentGameBalance,
         gameBalanceAfter: finalGameBalance,
+        points: totalAmount, // Store total amount as points for games section
+        amount: data.amount, // Keep original amount for reference
+        depositBonus: data.depositBonus, // Keep bonus percentage for reference
       });
 
       await batch.commit();
       
+      const bonusMessage = depositBonusAmount > 0 ? ` (including $${depositBonusAmount.toLocaleString()} bonus)` : '';
       toast({
         variant: "success",
         title: "Success",
-        description: `${transactionType} of $${data.amount.toLocaleString()} has been processed successfully. Game balance: $${currentGameBalance.toLocaleString()} → $${finalGameBalance.toLocaleString()}`,
+        description: `${transactionType} of $${data.amount.toLocaleString()}${bonusMessage} has been processed successfully. Total points: $${totalAmount.toLocaleString()}. Game balance: $${currentGameBalance.toLocaleString()} → $${finalGameBalance.toLocaleString()}`,
       });
       
       onSuccess();

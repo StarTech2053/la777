@@ -117,15 +117,25 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
         
         const calculatedRows: ReportRow[] = combined.map(tx => {
             let balanceBefore, balanceAfter;
-            const amount = 'amount' in tx ? tx.amount : 0;
+            
+            // Use points field if available (for new transactions), otherwise use amount
+            const transactionAmount = 'points' in tx ? tx.points : ('amount' in tx ? tx.amount : 0);
             const isCreditToGame = tx.type === 'Withdraw' || tx.type === 'Recharge'
+            
+            console.log("🔍 Processing transaction:", {
+                id: tx.id,
+                type: tx.type,
+                amount: 'amount' in tx ? tx.amount : 'N/A',
+                points: 'points' in tx ? tx.points : 'N/A',
+                transactionAmount: transactionAmount
+            });
             
             balanceAfter = runningBalance;
             
             if (isCreditToGame) {
-                balanceBefore = runningBalance - amount;
+                balanceBefore = runningBalance - transactionAmount;
             } else { // Deposit, Freeplay, etc.
-                balanceBefore = runningBalance + amount;
+                balanceBefore = runningBalance + transactionAmount;
             }
             
             runningBalance = balanceBefore;
@@ -136,7 +146,7 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
                 player: 'playerName' in tx ? tx.playerName : 'SYSTEM',
                 staff: 'staffName' in tx ? (tx.staffName || 'SYSTEM') : 'SYSTEM',
                 type: tx.type,
-                points: amount,
+                points: transactionAmount,
                 balanceBefore: balanceBefore,
                 balanceAfter: balanceAfter
             };

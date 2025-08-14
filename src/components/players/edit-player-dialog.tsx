@@ -90,19 +90,35 @@ export function EditPlayerDialog({
     if (!player) return;
 
     try {
+      console.log("🚀 Starting player update for:", player.id);
+      
       const submissionData = {
         ...data,
         playerId: player.id,
         referredBy: data.referredBy === 'none' ? undefined : data.referredBy,
       }
+      
+      console.log("📝 Submitting player update:", submissionData);
       const result = await editPlayer(submissionData);
       
+      console.log("📊 Edit result:", result);
+      
       if (result.success) {
+        console.log("✅ Player update successful");
+        toast({
+          variant: "success",
+          title: "Success",
+          description: "Player updated successfully!",
+        });
         onSuccess();
+      } else {
+        console.error("❌ Player update failed:", result.error);
+        throw new Error(result.error || "Failed to update player");
       }
       
     } catch (error) {
-       const errorMessage = error instanceof Error ? error.message : "Failed to update player. Please try again.";
+      console.error("💥 Error in onSubmit:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update player. Please try again.";
       toast({
         variant: "destructive",
         title: "Error",
