@@ -242,6 +242,12 @@ export default function PlayerProfilePage() {
         return allPlayers.find((p: Player) => p.name === player.referredBy);
     }, [player, allPlayers]);
 
+    // Find players who were referred by this player
+    const referrals = useMemo(() => {
+        if (!player) return [];
+        return allPlayers.filter((p: Player) => p.referredBy === player.name);
+    }, [player, allPlayers]);
+
     if (isLoading || arePlayersLoading) {
         return (
             <div className="flex items-center justify-center h-full">
@@ -452,12 +458,14 @@ export default function PlayerProfilePage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {referrer ? (
+                            {referrals.length > 0 ? (
                                 <div className="space-y-2">
-                                    <div className="flex justify-between items-center p-2 bg-muted rounded">
-                                        <span className="text-sm font-medium">{referrer.name}</span>
-                                        <span className="text-sm text-muted-foreground">Referrer</span>
-                                    </div>
+                                    {referrals.map((referredPlayer) => (
+                                        <div key={referredPlayer.id} className="flex justify-between items-center p-2 bg-muted rounded">
+                                            <span className="text-sm font-medium">{referredPlayer.name}</span>
+                                            <span className="text-sm text-muted-foreground">Referred</span>
+                                        </div>
+                                    ))}
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground text-center py-4">
