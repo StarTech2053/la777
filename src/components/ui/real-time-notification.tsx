@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, Wifi, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RealTimeNotificationProps {
@@ -19,7 +19,7 @@ export function RealTimeNotification({
     switch (status) {
       case 'connected':
         return {
-          icon: CheckCircle,
+          icon: Wifi,
           text: 'Real-time connected',
           color: 'text-green-600',
           bgColor: 'bg-green-50',
@@ -35,8 +35,8 @@ export function RealTimeNotification({
         };
       case 'disconnected':
         return {
-          icon: AlertCircle,
-          text: 'Disconnected',
+          icon: WifiOff,
+          text: 'Internet disconnected',
           color: 'text-red-600',
           bgColor: 'bg-red-50',
           borderColor: 'border-red-200'
@@ -79,13 +79,40 @@ export function useRealTimeStatus() {
   const [lastUpdate, setLastUpdate] = React.useState<string>('');
 
   React.useEffect(() => {
-    // Simulate connection status
-    const timer = setTimeout(() => {
+    // Check initial internet connectivity
+    const checkOnlineStatus = () => {
+      if (navigator.onLine) {
+        setStatus('connected');
+        setLastUpdate(new Date().toISOString());
+      } else {
+        setStatus('disconnected');
+        setLastUpdate(new Date().toISOString());
+      }
+    };
+
+    // Initial check
+    checkOnlineStatus();
+
+    // Listen for online/offline events
+    const handleOnline = () => {
       setStatus('connected');
       setLastUpdate(new Date().toISOString());
-    }, 1000);
+    };
 
-    return () => clearTimeout(timer);
+    const handleOffline = () => {
+      setStatus('disconnected');
+      setLastUpdate(new Date().toISOString());
+    };
+
+    // Add event listeners
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const updateLastUpdate = React.useCallback(() => {
