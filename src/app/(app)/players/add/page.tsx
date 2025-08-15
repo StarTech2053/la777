@@ -28,6 +28,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { addPlayer } from "@/app/(app)/players/actions";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
   name: z.string()
@@ -44,6 +45,7 @@ export default function AddPlayerPage() {
     const { toast } = useToast();
   const router = useRouter();
   const { players, isLoading } = usePlayersStore();
+  const { isAuthenticated, user } = useAuth();
 
   const {
     register,
@@ -62,9 +64,21 @@ export default function AddPlayerPage() {
 
   const onSubmit = async (data: FormValues) => {
     try {
+      // Check if user is authenticated
+      if (!isAuthenticated || !user) {
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "Please sign in to add players.",
+        });
+        router.push("/sign-in");
+        return;
+      }
+
       const submissionData = {
         ...data,
         referredBy: data.referredBy === "none" ? "" : data.referredBy,
+        createdBy: user.uid, // Add user ID who created the player
       };
 
       const result = await addPlayer(submissionData);
@@ -88,6 +102,24 @@ export default function AddPlayerPage() {
       });
     }
   };
+
+  // Show loading while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    router.push("/sign-in");
+    return null;
+  }
 
   return (
     <Card className="max-w-2xl mx-auto">

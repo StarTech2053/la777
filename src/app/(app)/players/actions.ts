@@ -2,17 +2,6 @@
 
 import { doc, updateDoc, collection, setDoc, writeBatch, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-
-// Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(require('@/lib/serviceAccountKey.json')),
-  });
-}
-
-const adminDb = getFirestore();
 
 export async function updatePlayerAvatar({ playerId, avatarUrl }: { playerId: string, avatarUrl: string }) {
     try {
@@ -37,10 +26,10 @@ export async function updatePlayerAvatar({ playerId, avatarUrl }: { playerId: st
 
 export async function addPlayer(playerData: any) {
     try {
-        console.log("🔄 Adding new player using Admin SDK:", playerData);
+        console.log("🔄 Adding new player:", playerData);
         
-        // Use Firebase Admin SDK to bypass client-side authentication
-        const playerRef = adminDb.collection('players').doc();
+        // Use Firebase client SDK
+        const playerRef = doc(collection(db, 'players'));
         const playerDoc = {
             ...playerData,
             id: playerRef.id,
@@ -63,7 +52,7 @@ export async function addPlayer(playerData: any) {
         };
         
         console.log("📝 Creating player document:", playerDoc);
-        await playerRef.set(playerDoc);
+        await setDoc(playerRef, playerDoc);
         
         console.log("✅ Player added successfully with ID:", playerRef.id);
         return { success: true, id: playerRef.id };
