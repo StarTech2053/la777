@@ -44,19 +44,23 @@ type FormValues = z.infer<typeof formSchema>;
 export default function AddPlayerPage() {
     const { toast } = useToast();
   const router = useRouter();
-  const { players, isLoading } = usePlayersStore();
+  const { players, isLoading, refreshPlayers } = usePlayersStore();
   const { isAuthenticated, user } = useAuth();
 
-  // Filter out duplicate players based on ID
+  // Filter out duplicate players based on ID and ensure unique keys
   const uniquePlayers = React.useMemo(() => {
     const seen = new Set();
-    return players.filter(player => {
-      if (seen.has(player.id)) {
-        return false;
+    const unique = [];
+    
+    for (const player of players) {
+      if (!seen.has(player.id)) {
+        seen.add(player.id);
+        unique.push(player);
       }
-      seen.add(player.id);
-      return true;
-    });
+    }
+    
+    console.log("🔍 Unique players count:", unique.length, "Total players:", players.length);
+    return unique;
   }, [players]);
 
   const {
@@ -101,6 +105,8 @@ export default function AddPlayerPage() {
           title: "Success",
           description: "Player has been added successfully.",
         });
+        // Refresh players data to ensure new player is loaded
+        await refreshPlayers();
         router.push("/players");
       } else {
         throw new Error(result.error || "An unknown error occurred.");

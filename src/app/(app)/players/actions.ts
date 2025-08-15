@@ -43,6 +43,7 @@ export async function addPlayer(playerData: any) {
                 tDeposit: 0,
                 tWithdraw: 0,
                 tBonusPlay: 0,
+                tDepositBonus: 0,
                 tReferralBonus: 0,
                 pAndL: 0
             },
