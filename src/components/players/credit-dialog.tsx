@@ -78,6 +78,7 @@ export function CreditDialog({
     try {
         const result = await processCredit({
             playerId: player.id,
+            playerName: player.name,
             type,
             staffName,
             ...data

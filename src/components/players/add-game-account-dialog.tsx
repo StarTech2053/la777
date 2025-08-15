@@ -131,7 +131,7 @@ export function AddGameAccountDialog({
             <div className="space-y-2">
               <Label htmlFor="gameName">Game</Label>
               <Select onValueChange={(value: string) => setValue("gameName", value, { shouldValidate: true })}>
-                <SelectTrigger>
+                <SelectTrigger id="gameName">
                   <SelectValue placeholder="Select a game" />
                 </SelectTrigger>
                 <SelectContent>

@@ -144,13 +144,13 @@ export default function AddPlayerPage() {
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
                      <div className="space-y-2">
-             <Label htmlFor="playerName">Player Name</Label>
-             <Input id="playerName" {...register("name")} placeholder="e.g., John Doe" />
+             <Label htmlFor="name">Player Name</Label>
+             <Input id="name" {...register("name")} placeholder="e.g., John Doe" />
              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
            </div>
            <div className="space-y-2">
-             <Label htmlFor="facebookLink">Facebook Link</Label>
-             <Input id="facebookLink" {...register("facebookUrl")} placeholder="https://facebook.com/..." />
+             <Label htmlFor="facebookUrl">Facebook Link</Label>
+             <Input id="facebookUrl" {...register("facebookUrl")} placeholder="https://facebook.com/..." />
              {errors.facebookUrl && <p className="text-sm text-destructive">{errors.facebookUrl.message}</p>}
            </div>
            <div className="space-y-2">
@@ -163,14 +163,14 @@ export default function AddPlayerPage() {
                      <SelectTrigger id="referredBy">
                        <SelectValue placeholder={isLoading ? "Loading..." : "Select a player..."} />
                      </SelectTrigger>
-                                          <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {uniquePlayers.map((p) => (
-                          <SelectItem key={p.id} value={p.name}>
-                            {p.name} ({p.id})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                                                               <SelectContent>
+                       <SelectItem value="none">None</SelectItem>
+                       {uniquePlayers.map((p) => (
+                         <SelectItem key={p.id} value={p.name}>
+                           {p.name}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
                    </Select>
                  )}
                />

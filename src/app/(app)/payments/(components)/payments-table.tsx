@@ -254,7 +254,9 @@ export function PaymentsTable({ title, description }: { title: string, descripti
     const transactionsQuery = query(collection(db, "transactions"), orderBy("date", "desc"));
     const unsubscribe = onSnapshot(transactionsQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
-        setTransactions(data);
+        // Filter to show only Deposit and Withdraw transactions
+        const filteredData = data.filter(tx => tx.type === 'Deposit' || tx.type === 'Withdraw');
+        setTransactions(filteredData);
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching transactions:", error);

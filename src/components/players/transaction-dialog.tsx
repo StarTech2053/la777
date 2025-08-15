@@ -152,6 +152,7 @@ export function TransactionDialog({
       if (transactionType === 'Deposit') {
         // ✅ CORRECT LOGIC: Deposit = Money from game to player (total amount including bonus)
         playerUpdate['stats.tDeposit'] = increment(data.amount);
+        playerUpdate['stats.tDepositBonus'] = increment(depositBonusAmount); // Add deposit bonus to player stats
         gameUpdate['balance'] = increment(-totalAmount); // Game balance DECREASES by total amount
       } else { // Withdraw
         // ✅ CORRECT LOGIC: Withdraw = Money from player to game

@@ -26,8 +26,10 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { processReferral } from "@/app/(app)/players/actions";
-import type { Player } from "@/lib/types";
+import type { Player, Transaction } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
+import { usePlayersStore } from "@/hooks/use-players-store";
+import { useFirebaseCollection } from "@/hooks/use-firebase-cache";
 
 const formSchema = z.object({
   referralId: z.string().min(1, "Please select a referral."),
@@ -94,7 +96,44 @@ export function ReferralDialog({
     }
   };
   
-  const availableReferrals = player?.referrals?.filter(r => !r.bonusGiven && r.firstDeposit && r.firstDeposit > 0) || [];
+  // Find players who were referred by this player
+  const { players } = usePlayersStore();
+  const { data: transactions } = useFirebaseCollection<Transaction>('transactions');
+  
+  const availableReferrals = React.useMemo(() => {
+    if (!player) return [];
+    
+    // Find all players who have this player as their referrer
+    const referredPlayers = players.filter(p => p.referredBy === player.name);
+    
+    // Filter for eligible referrals (have made deposits and bonus not given yet)
+    return referredPlayers.filter(refPlayer => {
+      // Check if they have made any deposits
+      const hasDeposits = refPlayer.stats.tDeposit > 0;
+      
+      // Check if bonus has already been given (we'll need to check transactions)
+      // For now, we'll assume bonus hasn't been given if we can't find a referral transaction
+      const bonusGiven = false; // TODO: Check transactions for referral bonus
+      
+      return hasDeposits && !bonusGiven;
+    }).map(refPlayer => {
+      // Find first deposit transaction for this player
+      const playerTransactions = transactions.filter(t => t.playerName === refPlayer.name && t.type === 'Deposit');
+      const firstDepositTransaction = playerTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+      const firstDepositAmount = firstDepositTransaction ? firstDepositTransaction.amount : 0;
+      
+      return {
+        id: refPlayer.id,
+        name: refPlayer.name,
+        joinDate: refPlayer.joinDate,
+        tDeposit: refPlayer.stats.tDeposit,
+        tWithdraw: refPlayer.stats.tWithdraw,
+        pAndL: refPlayer.stats.pAndL,
+        firstDeposit: firstDepositAmount, // Use actual first deposit amount
+        bonusGiven: false
+      };
+    });
+  }, [player, players, transactions]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

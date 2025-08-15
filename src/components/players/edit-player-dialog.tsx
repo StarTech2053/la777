@@ -69,9 +69,18 @@ export function EditPlayerDialog({
   const referrersList = React.useMemo(() => {
     if (!player) return [];
     // A referrer must have joined before the player being edited.
-    return players.filter(p => 
-      p.id !== player.id && new Date(p.joinDate) < new Date(player.joinDate)
+    const filteredPlayers = players.filter(p => 
+      p.id !== player.id && new Date(p.joinDate) <= new Date(player.joinDate)
     );
+    
+    console.log("🔍 Referrers list for player:", player.name, {
+      playerJoinDate: player.joinDate,
+      totalPlayers: players.length,
+      filteredPlayers: filteredPlayers.length,
+      availableReferrers: filteredPlayers.map(p => ({ name: p.name, joinDate: p.joinDate }))
+    });
+    
+    return filteredPlayers;
   }, [players, player]);
 
 
@@ -163,7 +172,7 @@ export function EditPlayerDialog({
                   control={control}
                   render={({ field }) => (
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger>
+                        <SelectTrigger id="status">
                         <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
