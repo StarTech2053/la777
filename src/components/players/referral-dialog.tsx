@@ -43,6 +43,7 @@ interface ReferralDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   player: Player | undefined;
+  selectedReferralPlayer?: Player | null;
   onSuccess: () => void;
 }
 
@@ -50,6 +51,7 @@ export function ReferralDialog({
   isOpen,
   onOpenChange,
   player,
+  selectedReferralPlayer,
   onSuccess,
 }: ReferralDialogProps) {
   const { toast } = useToast();
@@ -68,8 +70,11 @@ export function ReferralDialog({
   React.useEffect(() => {
     if (!isOpen) {
       reset();
+    } else if (selectedReferralPlayer) {
+      // Pre-select the specific referral player
+      setValue('referralId', selectedReferralPlayer.id, { shouldValidate: true });
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, selectedReferralPlayer, setValue]);
 
   const onSubmit = async (data: FormValues) => {
     if (!player || !staffName) return;
@@ -103,21 +108,33 @@ export function ReferralDialog({
   const availableReferrals = React.useMemo(() => {
     if (!player) return [];
     
-    // Find all players who have this player as their referrer
+    // If a specific referral player is selected, only show that player
+    if (selectedReferralPlayer) {
+      const playerTransactions = transactions.filter(t => t.playerName === selectedReferralPlayer.name && t.type === 'Deposit');
+      const firstDepositTransaction = playerTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+      const firstDepositAmount = firstDepositTransaction ? firstDepositTransaction.amount : 0;
+      
+      return [{
+        id: selectedReferralPlayer.id,
+        name: selectedReferralPlayer.name,
+        joinDate: selectedReferralPlayer.joinDate,
+        tDeposit: selectedReferralPlayer.stats.tDeposit,
+        tWithdraw: selectedReferralPlayer.stats.tWithdraw,
+        pAndL: selectedReferralPlayer.stats.pAndL,
+        firstDeposit: firstDepositAmount,
+        bonusGiven: false
+      }];
+    }
+    
+    // Otherwise, show all eligible referrals
     const referredPlayers = players.filter(p => p.referredBy === player.name);
     
-    // Filter for eligible referrals (have made deposits and bonus not given yet)
     return referredPlayers.filter(refPlayer => {
-      // Check if they have made any deposits
       const hasDeposits = refPlayer.stats.tDeposit > 0;
-      
-      // Check if bonus has already been given (we'll need to check transactions)
-      // For now, we'll assume bonus hasn't been given if we can't find a referral transaction
-      const bonusGiven = false; // TODO: Check transactions for referral bonus
+      const bonusGiven = false;
       
       return hasDeposits && !bonusGiven;
     }).map(refPlayer => {
-      // Find first deposit transaction for this player
       const playerTransactions = transactions.filter(t => t.playerName === refPlayer.name && t.type === 'Deposit');
       const firstDepositTransaction = playerTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
       const firstDepositAmount = firstDepositTransaction ? firstDepositTransaction.amount : 0;
@@ -129,11 +146,11 @@ export function ReferralDialog({
         tDeposit: refPlayer.stats.tDeposit,
         tWithdraw: refPlayer.stats.tWithdraw,
         pAndL: refPlayer.stats.pAndL,
-        firstDeposit: firstDepositAmount, // Use actual first deposit amount
+        firstDeposit: firstDepositAmount,
         bonusGiven: false
       };
     });
-  }, [player, players, transactions]);
+  }, [player, players, transactions, selectedReferralPlayer]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

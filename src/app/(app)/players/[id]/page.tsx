@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/dialog';
 import { AddGameAccountDialog } from '@/components/players/add-game-account-dialog';
 import { UpdateAvatarUrlDialog } from '@/components/players/update-avatar-url-dialog';
+import { ReferralDialog } from '@/components/players/referral-dialog';
 
 const ACTIVITY_ITEMS_PER_PAGE = 3;
 
@@ -79,6 +80,8 @@ export default function PlayerProfilePage() {
     const [isUploading, setIsUploading] = useState(false);
     const [isAddGameOpen, setIsAddGameOpen] = useState(false);
     const [isUpdateUrlOpen, setIsUpdateUrlOpen] = useState(false);
+    const [isReferralOpen, setIsReferralOpen] = useState(false);
+    const [selectedReferralPlayer, setSelectedReferralPlayer] = useState<Player | null>(null);
     const [activityPage, setActivityPage] = useState(1);
     const [avatarKey, setAvatarKey] = useState(0); // Force re-render
 
@@ -237,16 +240,41 @@ export default function PlayerProfilePage() {
         setIsAddGameOpen(false);
     };
 
+    const handleReferralSuccess = () => {
+        toast({
+            variant: "success",
+            title: "Success",
+            description: "Referral bonus has been processed successfully.",
+        });
+        setIsReferralOpen(false);
+        setSelectedReferralPlayer(null);
+    };
+
     const referrer = useMemo(() => {
         if (!player?.referredBy) return null;
         return allPlayers.find((p: Player) => p.name === player.referredBy);
     }, [player, allPlayers]);
 
-    // Find players who were referred by this player
+    // Find players who were referred by this player with bonus status
     const referrals = useMemo(() => {
         if (!player) return [];
-        return allPlayers.filter((p: Player) => p.referredBy === player.name);
-    }, [player, allPlayers]);
+        
+        const referredPlayers = allPlayers.filter((p: Player) => p.referredBy === player.name);
+        
+        // Check which referred players have received bonus
+        return referredPlayers.map(referredPlayer => {
+            // Check if this player has received referral bonus for this referred player
+            const hasReceivedBonus = transactions.some(t => 
+                t.type === 'Referral' && 
+                t.referralId === referredPlayer.id
+            );
+            
+            return {
+                ...referredPlayer,
+                hasReceivedBonus
+            };
+        });
+    }, [player, allPlayers, transactions]);
 
     if (isLoading || arePlayersLoading) {
         return (
@@ -370,11 +398,22 @@ export default function PlayerProfilePage() {
                                         </Link>
                                     } 
                                 />
-                                <DetailItem 
-                                    isLoading={isLoading} 
-                                    label="Referred by:" 
-                                    value={player.referredBy || "N/A"} 
-                                />
+                                                                 <DetailItem 
+                                     isLoading={isLoading} 
+                                     label="Referred by:" 
+                                     value={
+                                         player.referredBy ? (
+                                             <Link 
+                                                 href={`/players/${allPlayers.find(p => p.name === player.referredBy)?.id}`}
+                                                 className="text-primary hover:underline font-medium"
+                                             >
+                                                 {player.referredBy}
+                                             </Link>
+                                         ) : (
+                                             "N/A"
+                                         )
+                                     } 
+                                 />
                                 <DetailItem 
                                     isLoading={isLoading} 
                                     label="Last Activity:" 
@@ -458,16 +497,39 @@ export default function PlayerProfilePage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {referrals.length > 0 ? (
-                                <div className="space-y-2">
-                                    {referrals.map((referredPlayer) => (
-                                        <div key={referredPlayer.id} className="flex justify-between items-center p-2 bg-muted rounded">
-                                            <span className="text-sm font-medium">{referredPlayer.name}</span>
-                                            <span className="text-sm text-muted-foreground">Referred</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
+                                                         {referrals.length > 0 ? (
+                                 <div className="space-y-2">
+                                     {referrals.map((referredPlayer) => (
+                                         <div key={referredPlayer.id} className="flex justify-between items-center p-2 bg-muted rounded">
+                                             <Link 
+                                                 href={`/players/${referredPlayer.id}`}
+                                                 className={`text-sm font-medium hover:underline ${
+                                                     referredPlayer.hasReceivedBonus 
+                                                         ? 'text-primary' 
+                                                         : 'text-orange-500'
+                                                 }`}
+                                             >
+                                                 {referredPlayer.name}
+                                             </Link>
+                                             {referredPlayer.hasReceivedBonus ? (
+                                                 <span className="text-sm text-muted-foreground">
+                                                     Referred
+                                                 </span>
+                                                                                           ) : (
+                                                  <button
+                                                      onClick={() => {
+                                                          setSelectedReferralPlayer(referredPlayer);
+                                                          setIsReferralOpen(true);
+                                                      }}
+                                                      className="text-sm text-orange-500 hover:text-orange-600 hover:underline cursor-pointer"
+                                                  >
+                                                      Pending Bonus
+                                                  </button>
+                                              )}
+                                         </div>
+                                     ))}
+                                 </div>
+                             ) : (
                                 <p className="text-sm text-muted-foreground text-center py-4">
                                     No referrals yet.
                                 </p>
@@ -554,6 +616,14 @@ export default function PlayerProfilePage() {
                 isOpen={isUpdateUrlOpen}
                 onOpenChange={setIsUpdateUrlOpen}
                 onSuccess={updateAvatar}
+            />
+
+            <ReferralDialog
+                isOpen={isReferralOpen}
+                onOpenChange={setIsReferralOpen}
+                player={player}
+                selectedReferralPlayer={selectedReferralPlayer}
+                onSuccess={handleReferralSuccess}
             />
         </>
     );
