@@ -36,7 +36,7 @@ const formSchema = z.object({
   tip: z.coerce.number().min(0).optional(),
   depositBonus: z.coerce.number().min(0).optional(),
   paymentMethod: z.enum(["Chime", "CashApp"], { required_error: "Please select a payment method." }),
-  paymentTag: z.string().min(1, "Please select a payment tag."),
+  playerTag: z.string().min(1, "Please enter player's tag."),
   gameName: z.string().min(1, "Please select a gaming account."),
 });
 
@@ -58,7 +58,6 @@ export function TransactionDialog({
   onSuccess,
 }: TransactionDialogProps) {
   const { toast } = useToast();
-  const [activeTags, setActiveTags] = React.useState<PaymentTag[]>([]);
   const { name: staffName } = useAuth();
 
   const {
@@ -77,29 +76,11 @@ export function TransactionDialog({
     }
   });
 
-  const selectedPaymentMethod = watch("paymentMethod");
 
-  React.useEffect(() => {
-    if (selectedPaymentMethod) {
-      const tagsQuery = query(
-          collection(db, "paymentTags"),
-          where("method", "==", selectedPaymentMethod),
-          where("status", "==", "Active")
-      );
-      const unsubscribe = onSnapshot(tagsQuery, (snapshot) => {
-          const tagsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as PaymentTag));
-          setActiveTags(tagsData);
-      });
-      setValue('paymentTag', "", { shouldValidate: false });
-      return () => unsubscribe();
-    } else {
-      setActiveTags([]);
-    }
-  }, [selectedPaymentMethod, setValue]);
   
   React.useEffect(() => {
     if (!isOpen) {
-      reset({ amount: undefined, depositBonus: 0, tip: 0, paymentTag: undefined, paymentMethod: undefined, gameName: undefined });
+      reset({ amount: undefined, depositBonus: 0, tip: 0, paymentMethod: undefined, playerTag: undefined, gameName: undefined });
     }
   }, [isOpen, reset]);
 
@@ -170,22 +151,24 @@ export function TransactionDialog({
       batch.update(playerRef, playerUpdate);
       batch.update(gameRef, gameUpdate);
 
-      // Create transaction document with balance information
-      const newTransactionRef = doc(collection(db, 'transactions'));
-      batch.set(newTransactionRef, {
-        ...data,
-        playerId: player.id,
-        type: transactionType,
-        date: new Date().toISOString(),
-        playerName: player.name,
-        staffName: staffName,
-        status: 'Approved' as const,
-        gameBalanceBefore: currentGameBalance,
-        gameBalanceAfter: finalGameBalance,
-        points: totalAmount, // Store total amount as points for games section
-        amount: data.amount, // Keep original amount for reference
-        depositBonus: data.depositBonus, // Keep bonus percentage for reference
-      });
+             // Create transaction document with balance information
+       const newTransactionRef = doc(collection(db, 'transactions'));
+       batch.set(newTransactionRef, {
+         ...data,
+         playerId: player.id,
+         type: transactionType,
+         date: new Date().toISOString(),
+         playerName: player.name,
+         staffName: staffName,
+         status: transactionType === 'Withdraw' ? 'pending' : 'Approved',
+         gameBalanceBefore: currentGameBalance,
+         gameBalanceAfter: finalGameBalance,
+         points: totalAmount, // Store total amount as points for games section
+         amount: data.amount, // Keep original amount for reference
+         depositBonus: data.depositBonus, // Keep bonus percentage for reference
+         playerTag: data.playerTag, // Store player's tag for receiving payment
+         paymentTag: '', // Empty payment tag for staff requests
+       });
 
       await batch.commit();
       
@@ -304,38 +287,21 @@ export function TransactionDialog({
                  <p className="text-sm text-destructive">{errors.paymentMethod.message}</p>
               )}
             </div>
-             {selectedPaymentMethod && (
-              <div className="space-y-2">
-                <Label htmlFor="paymentTag">Payment Tag</Label>
-                <Controller
-                    name="paymentTag"
-                    control={control}
-                    render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <SelectTrigger id="paymentTag" name="paymentTag">
-                                <SelectValue placeholder="Select a tag" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {activeTags.length > 0 ? (
-                                activeTags.map(tag => (
-                                    <SelectItem key={tag.id} value={tag.tag}>
-                                    {tag.tag}
-                                    </SelectItem>
-                                ))
-                                ) : (
-                                <SelectItem value="no-tags" disabled>
-                                    No active tags for {selectedPaymentMethod}.
-                                </SelectItem>
-                                )}
-                            </SelectContent>
-                        </Select>
-                    )}
-                />
-                {errors.paymentTag && (
-                    <p className="text-sm text-destructive">{errors.paymentTag.message}</p>
-                )}
-              </div>
-            )}
+            
+                         <div className="space-y-2">
+               <Label htmlFor="playerTag">Player's Tag</Label>
+               <Input
+                 id="playerTag"
+                 name="playerTag"
+                 type="text"
+                 autoComplete="off"
+                 {...register("playerTag")}
+                 placeholder="Enter player's payment tag"
+               />
+               {errors.playerTag && (
+                 <p className="text-sm text-destructive">{errors.playerTag.message}</p>
+               )}
+             </div>
              <div className="space-y-2">
               <Label htmlFor="gameName">Gaming Account</Label>
               <Controller
@@ -369,6 +335,7 @@ export function TransactionDialog({
                  <p className="text-sm text-destructive">{errors.gameName.message}</p>
               )}
             </div>
+            
           </div>
           <DialogFooter>
             <Button

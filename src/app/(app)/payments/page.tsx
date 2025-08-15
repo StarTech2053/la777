@@ -1,5 +1,6 @@
 import { PaymentTagsCard } from "@/components/payments/payment-tags";
 import { PaymentsTable } from "./(components)/payments-table";
+import { WithdrawRequests } from "@/components/payments/withdraw-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function PaymentsPage() {
@@ -9,6 +10,7 @@ export default function PaymentsPage() {
         <TabsList>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="tag">Tag</TabsTrigger>
+          <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
         </TabsList>
         <TabsContent value="payments">
             <div className="rounded-lg border shadow-sm mt-4">
@@ -23,6 +25,11 @@ export default function PaymentsPage() {
             <div className="rounded-lg border shadow-sm">
                 <PaymentTagsCard method="CashApp" />
             </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="withdraw">
+          <div className="mt-4">
+            <WithdrawRequests />
           </div>
         </TabsContent>
       </Tabs>
