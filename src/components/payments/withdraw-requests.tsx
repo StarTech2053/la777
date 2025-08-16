@@ -503,173 +503,7 @@ export function WithdrawRequests() {
                  </Table>
                </div>
              </TabsContent>
-            <TabsContent value="chime" className="m-0">
-              <div className="relative w-full overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Staff</TableHead>
-                      <TableHead>Player Tag</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Tag</TableHead>
-                      <TableHead>Pending Amount</TableHead>
-                      <TableHead>Paid Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRequests.length > 0 ? (
-                      filteredRequests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-medium">
-                            {format(new Date(request.date), "MM/dd/yyyy")}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(request.date), "h:mm a")}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {request.staffName || 'N/A'}
-                          </TableCell>
-                          <TableCell className="font-medium text-blue-600">
-                            <div className="flex items-center gap-2">
-                              <span>{request.playerTag}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 hover:bg-blue-100"
-                                onClick={() => handleCopyPlayerTag(request.playerTag || '')}
-                              >
-                                <Copy className="h-3 w-3 text-blue-600" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>{request.paymentMethod}</TableCell>
-                          <TableCell className="text-destructive font-semibold">
-                            -${request.amount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-green-600 font-medium">
-                            {request.paymentTag}
-                          </TableCell>
-                          <TableCell className="text-orange-600 font-semibold">
-                            ${request.pendingAmount?.toLocaleString() || '0'}
-                          </TableCell>
-                          <TableCell className="text-green-600 font-semibold">
-                            ${request.paidAmount?.toLocaleString() || '0'}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(request.status)}
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              className="h-8 w-8 p-0"
-                              onClick={() => handleProcessTransaction(request)}
-                            >
-                              <span className="sr-only">Open transaction form</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
-                          {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-            <TabsContent value="cashapp" className="m-0">
-              <div className="relative w-full overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Staff</TableHead>
-                      <TableHead>Player Tag</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Tag</TableHead>
-                      <TableHead>Pending Amount</TableHead>
-                      <TableHead>Paid Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRequests.length > 0 ? (
-                      filteredRequests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-medium">
-                            {format(new Date(request.date), "MM/dd/yyyy")}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(request.date), "h:mm a")}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {request.staffName || 'N/A'}
-                          </TableCell>
-                          <TableCell className="font-medium text-blue-600">
-                            <div className="flex items-center gap-2">
-                              <span>{request.playerTag}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 hover:bg-blue-100"
-                                onClick={() => handleCopyPlayerTag(request.playerTag || '')}
-                              >
-                                <Copy className="h-3 w-3 text-blue-600" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>{request.paymentMethod}</TableCell>
-                          <TableCell className="text-destructive font-semibold">
-                            -${request.amount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-green-600 font-medium">
-                            {request.paymentTag}
-                          </TableCell>
-                          <TableCell className="text-orange-600 font-semibold">
-                            ${request.pendingAmount?.toLocaleString() || '0'}
-                          </TableCell>
-                          <TableCell className="text-green-600 font-semibold">
-                            ${request.paidAmount?.toLocaleString() || '0'}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(request.status)}
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              className="h-8 w-8 p-0"
-                              onClick={() => handleProcessTransaction(request)}
-                            >
-                              <span className="sr-only">Open transaction form</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
-                          {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-                         </TabsContent>
-             <TabsContent value="pending" className="m-0">
+                         <TabsContent value="chime" className="m-0">
                <div className="relative w-full overflow-auto">
                  <Table>
                    <TableHeader>
@@ -730,14 +564,29 @@ export function WithdrawRequests() {
                              {getStatusBadge(request.status)}
                            </TableCell>
                            <TableCell>
-                             <Button 
-                               variant="ghost" 
-                               className="h-8 w-8 p-0"
-                               onClick={() => handleProcessTransaction(request)}
-                             >
-                               <span className="sr-only">Open transaction form</span>
-                               <MoreHorizontal className="h-4 w-4" />
-                             </Button>
+                             <div className="flex items-center gap-1">
+                               <Button 
+                                 variant="ghost" 
+                                 className="h-8 w-8 p-0"
+                                 onClick={() => handleProcessTransaction(request)}
+                               >
+                                 <span className="sr-only">Open transaction form</span>
+                                 <MoreHorizontal className="h-4 w-4" />
+                               </Button>
+                               {request.paymentHistory && request.paymentHistory.length > 0 && (
+                                 <Button 
+                                   variant="ghost" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               )}
+                             </div>
                            </TableCell>
                          </TableRow>
                        ))
@@ -752,7 +601,7 @@ export function WithdrawRequests() {
                  </Table>
                </div>
              </TabsContent>
-             <TabsContent value="complete" className="m-0">
+                         <TabsContent value="cashapp" className="m-0">
                <div className="relative w-full overflow-auto">
                  <Table>
                    <TableHeader>
@@ -813,14 +662,29 @@ export function WithdrawRequests() {
                              {getStatusBadge(request.status)}
                            </TableCell>
                            <TableCell>
-                             <Button 
-                               variant="ghost" 
-                               className="h-8 w-8 p-0"
-                               onClick={() => handleProcessTransaction(request)}
-                             >
-                               <span className="sr-only">Open transaction form</span>
-                               <MoreHorizontal className="h-4 w-4" />
-                             </Button>
+                             <div className="flex items-center gap-1">
+                               <Button 
+                                 variant="ghost" 
+                                 className="h-8 w-8 p-0"
+                                 onClick={() => handleProcessTransaction(request)}
+                               >
+                                 <span className="sr-only">Open transaction form</span>
+                                 <MoreHorizontal className="h-4 w-4" />
+                               </Button>
+                               {request.paymentHistory && request.paymentHistory.length > 0 && (
+                                 <Button 
+                                   variant="ghost" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               )}
+                             </div>
                            </TableCell>
                          </TableRow>
                        ))
@@ -834,7 +698,203 @@ export function WithdrawRequests() {
                    </TableBody>
                  </Table>
                </div>
-             </TabsContent>
+                          </TabsContent>
+                           <TabsContent value="pending" className="m-0">
+                <div className="relative w-full overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Staff</TableHead>
+                        <TableHead>Player Tag</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Tag</TableHead>
+                        <TableHead>Pending Amount</TableHead>
+                        <TableHead>Paid Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRequests.length > 0 ? (
+                        filteredRequests.map((request) => (
+                          <TableRow key={request.id}>
+                            <TableCell className="font-medium">
+                              {format(new Date(request.date), "MM/dd/yyyy")}
+                            </TableCell>
+                            <TableCell>
+                              {format(new Date(request.date), "h:mm a")}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {request.staffName || 'N/A'}
+                            </TableCell>
+                            <TableCell className="font-medium text-blue-600">
+                              <div className="flex items-center gap-2">
+                                <span>{request.playerTag}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-blue-100"
+                                  onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                                >
+                                  <Copy className="h-3 w-3 text-blue-600" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>{request.paymentMethod}</TableCell>
+                            <TableCell className="text-destructive font-semibold">
+                              -${request.amount.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-green-600 font-medium">
+                              {request.paymentTag}
+                            </TableCell>
+                            <TableCell className="text-orange-600 font-semibold">
+                              ${request.pendingAmount?.toLocaleString() || '0'}
+                            </TableCell>
+                            <TableCell className="text-green-600 font-semibold">
+                              ${request.paidAmount?.toLocaleString() || '0'}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(request.status)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handleProcessTransaction(request)}
+                                >
+                                  <span className="sr-only">Open transaction form</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                                {request.paymentHistory && request.paymentHistory.length > 0 && (
+                                  <Button 
+                                    variant="ghost" 
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                      setSelectedPaymentHistory(request);
+                                      setIsPaymentHistoryOpen(true);
+                                    }}
+                                  >
+                                    <span className="sr-only">View payment history</span>
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                            {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+                           <TabsContent value="complete" className="m-0">
+                <div className="relative w-full overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Staff</TableHead>
+                        <TableHead>Player Tag</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Tag</TableHead>
+                        <TableHead>Pending Amount</TableHead>
+                        <TableHead>Paid Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRequests.length > 0 ? (
+                        filteredRequests.map((request) => (
+                          <TableRow key={request.id}>
+                            <TableCell className="font-medium">
+                              {format(new Date(request.date), "MM/dd/yyyy")}
+                            </TableCell>
+                            <TableCell>
+                              {format(new Date(request.date), "h:mm a")}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {request.staffName || 'N/A'}
+                            </TableCell>
+                            <TableCell className="font-medium text-blue-600">
+                              <div className="flex items-center gap-2">
+                                <span>{request.playerTag}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-blue-100"
+                                  onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                                >
+                                  <Copy className="h-3 w-3 text-blue-600" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>{request.paymentMethod}</TableCell>
+                            <TableCell className="text-destructive font-semibold">
+                              -${request.amount.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-green-600 font-medium">
+                              {request.paymentTag}
+                            </TableCell>
+                            <TableCell className="text-orange-600 font-semibold">
+                              ${request.pendingAmount?.toLocaleString() || '0'}
+                            </TableCell>
+                            <TableCell className="text-green-600 font-semibold">
+                              ${request.paidAmount?.toLocaleString() || '0'}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(request.status)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handleProcessTransaction(request)}
+                                >
+                                  <span className="sr-only">Open transaction form</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                                {request.paymentHistory && request.paymentHistory.length > 0 && (
+                                  <Button 
+                                    variant="ghost" 
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                      setSelectedPaymentHistory(request);
+                                      setIsPaymentHistoryOpen(true);
+                                    }}
+                                  >
+                                    <span className="sr-only">View payment history</span>
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                            {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
            </Tabs>
             </div>
           </CardContent>
@@ -991,15 +1051,16 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="playerName">Player Name</Label>
-        <Input
-          id="playerName"
-          value={request.playerName}
-          disabled
-          className="bg-muted"
-        />
-      </div>
+             <div className="space-y-2">
+         <Label htmlFor="playerName">Player Name</Label>
+         <Input
+           id="playerName"
+           name="playerName"
+           value={request.playerName}
+           disabled
+           className="bg-muted"
+         />
+       </div>
 
       {/* Payment History Section */}
       {request.paymentHistory && request.paymentHistory.length > 0 && (
@@ -1025,99 +1086,105 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="playerTag">Player Tag</Label>
-        <div className="flex items-center space-x-2">
-          <Input
-            id="playerTag"
-            value={request.playerTag || ''}
-            disabled
-            className="bg-muted flex-1"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              navigator.clipboard.writeText(request.playerTag || '');
-            }}
-            className="shrink-0"
-          >
-            Copy
-          </Button>
-        </div>
-      </div>
+             <div className="space-y-2">
+         <Label htmlFor="playerTag">Player Tag</Label>
+         <div className="flex items-center space-x-2">
+           <Input
+             id="playerTag"
+             name="playerTag"
+             value={request.playerTag || ''}
+             disabled
+             className="bg-muted flex-1"
+           />
+           <Button
+             type="button"
+             variant="outline"
+             size="sm"
+             onClick={() => {
+               navigator.clipboard.writeText(request.playerTag || '');
+             }}
+             className="shrink-0"
+           >
+             Copy
+           </Button>
+         </div>
+       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="amount">Amount</Label>
-        <Input
-          id="amount"
-          value={`$${request.amount.toLocaleString()}`}
-          disabled
-          className="bg-muted"
-        />
-      </div>
+             <div className="space-y-2">
+         <Label htmlFor="amount">Amount</Label>
+         <Input
+           id="amount"
+           name="amount"
+           value={`$${request.amount.toLocaleString()}`}
+           disabled
+           className="bg-muted"
+         />
+       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="paidAmount">Additional Amount to Pay</Label>
-        <Input
-          id="paidAmount"
-          type="number"
-          value={paidAmount}
-          onChange={(e) => setPaidAmount(e.target.value)}
-          placeholder="Enter additional amount to pay"
-          className={`font-semibold ${totalPaidAmount > request.amount ? 'border-red-500' : ''}`}
-        />
-        <p className="text-sm text-muted-foreground">
-          Already paid: ${request.paidAmount?.toLocaleString() || '0'}
-        </p>
-        {totalPaidAmount > request.amount && (
-          <p className="text-sm text-red-500">Total amount cannot exceed ${request.amount.toLocaleString()}</p>
-        )}
-      </div>
+             <div className="space-y-2">
+         <Label htmlFor="paidAmount">Additional Amount to Pay</Label>
+         <Input
+           id="paidAmount"
+           name="paidAmount"
+           type="number"
+           value={paidAmount}
+           onChange={(e) => setPaidAmount(e.target.value)}
+           placeholder="Enter additional amount to pay"
+           className={`font-semibold ${totalPaidAmount > request.amount ? 'border-red-500' : ''}`}
+         />
+         <p className="text-sm text-muted-foreground">
+           Already paid: ${request.paidAmount?.toLocaleString() || '0'}
+         </p>
+         {totalPaidAmount > request.amount && (
+           <p className="text-sm text-red-500">Total amount cannot exceed ${request.amount.toLocaleString()}</p>
+         )}
+       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="pendingAmount">Pending Amount</Label>
-        <Input
-          id="pendingAmount"
-          value={`$${pendingAmount.toLocaleString()}`}
-          disabled
-          className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
-        />
-      </div>
+             <div className="space-y-2">
+         <Label htmlFor="pendingAmount">Pending Amount</Label>
+         <Input
+           id="pendingAmount"
+           name="pendingAmount"
+           value={`$${pendingAmount.toLocaleString()}`}
+           disabled
+           className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
+         />
+       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="paymentMethod">Payment Method</Label>
-        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-          <SelectTrigger id="paymentMethod">
-            <SelectValue placeholder="Select payment method" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="CashApp">CashApp</SelectItem>
-            <SelectItem value="Chime">Chime</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+             <div className="space-y-2">
+         <Label htmlFor="paymentMethod">Payment Method</Label>
+         <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+           <SelectTrigger id="paymentMethod" name="paymentMethod">
+             <SelectValue placeholder="Select payment method" />
+           </SelectTrigger>
+           <SelectContent>
+             <SelectItem value="CashApp">CashApp</SelectItem>
+             <SelectItem value="Chime">Chime</SelectItem>
+           </SelectContent>
+         </Select>
+       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="paymentTag">Payment Tag</Label>
-        <Input
-          id="paymentTag"
-          value={paymentTag}
-          onChange={(e) => setPaymentTag(e.target.value)}
-          placeholder="Enter payment tag"
-        />
-      </div>
+             <div className="space-y-2">
+         <Label htmlFor="paymentTag">Payment Tag</Label>
+         <Input
+           id="paymentTag"
+           name="paymentTag"
+           value={paymentTag}
+           onChange={(e) => setPaymentTag(e.target.value)}
+           placeholder="Enter payment tag"
+         />
+       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="status">Status</Label>
-        <Input
-          id="status"
-          value={pendingAmount === 0 ? 'Completed' : 'Pending'}
-          disabled
-          className="bg-muted font-semibold"
-        />
-      </div>
+             <div className="space-y-2">
+         <Label htmlFor="status">Status</Label>
+         <Input
+           id="status"
+           name="status"
+           value={pendingAmount === 0 ? 'Completed' : 'Pending'}
+           disabled
+           className="bg-muted font-semibold"
+         />
+       </div>
 
       <div className="flex justify-between pt-4">
         <Button type="button" variant="destructive" onClick={onDelete}>
