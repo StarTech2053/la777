@@ -8,13 +8,7 @@ import { useWithdrawNotifications } from "@/hooks/use-withdraw-notifications";
 import { cn } from "@/lib/utils";
 
 export default function PaymentsPage() {
-  const { hasNewRequests, clearNotification } = useWithdrawNotifications();
-
-  const handleWithdrawTabClick = () => {
-    if (hasNewRequests) {
-      clearNotification();
-    }
-  };
+  const { hasNewRequests } = useWithdrawNotifications();
 
   return (
     <div className="space-y-4">
@@ -24,7 +18,6 @@ export default function PaymentsPage() {
           <TabsTrigger value="tag">Tag</TabsTrigger>
           <TabsTrigger 
             value="withdraw" 
-            onClick={handleWithdrawTabClick}
             className={cn(
               "relative transition-all duration-300",
               hasNewRequests && "animate-flicker bg-gradient-to-r from-red-500 via-orange-500 to-red-500 bg-[length:200%_100%] text-white font-semibold shadow-lg"

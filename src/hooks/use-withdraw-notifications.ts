@@ -6,9 +6,19 @@ import { db } from '@/lib/firebase';
 
 export function useWithdrawNotifications() {
   const [hasNewRequests, setHasNewRequests] = useState(false);
-  const [lastCheckedTime, setLastCheckedTime] = useState<Date>(new Date());
+  const [lastCheckedTime, setLastCheckedTime] = useState<Date>(() => {
+    // Initialize with stored time or current time
+    const stored = localStorage.getItem('withdrawLastChecked');
+    return stored ? new Date(stored) : new Date();
+  });
 
   useEffect(() => {
+    // Check for existing notification on mount
+    const storedNotification = localStorage.getItem('withdrawNotification');
+    if (storedNotification === 'true') {
+      setHasNewRequests(true);
+    }
+
     // Listen for new withdraw requests
     const unsubscribe = onSnapshot(
       query(
@@ -25,11 +35,7 @@ export function useWithdrawNotifications() {
 
         if (newRequests.length > 0) {
           setHasNewRequests(true);
-          // Auto-clear notification after 15 seconds
-          setTimeout(() => {
-            setHasNewRequests(false);
-            setLastCheckedTime(new Date());
-          }, 15000);
+          localStorage.setItem('withdrawNotification', 'true');
         }
       },
       (error) => {
@@ -42,7 +48,10 @@ export function useWithdrawNotifications() {
 
   const clearNotification = () => {
     setHasNewRequests(false);
-    setLastCheckedTime(new Date());
+    const newTime = new Date();
+    setLastCheckedTime(newTime);
+    localStorage.setItem('withdrawLastChecked', newTime.toISOString());
+    localStorage.removeItem('withdrawNotification');
   };
 
   return {

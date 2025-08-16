@@ -17,6 +17,7 @@ import {
 import type { NavItem } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
 import { useMemo } from "react";
+import { useWithdrawNotifications } from "@/hooks/use-withdraw-notifications";
 
 
 const allNavItems: NavItem[] = [
@@ -32,6 +33,7 @@ const allNavItems: NavItem[] = [
 export function SidebarNav() {
   const pathname = usePathname();
   const { role, isAuthenticated } = useAuth();
+  const { hasNewRequests } = useWithdrawNotifications();
 
   const navItems = useMemo(() => {
     if (role === 'Admin') {
@@ -84,12 +86,17 @@ export function SidebarNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && "bg-muted text-primary"
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary relative",
+                (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) && "bg-muted text-primary",
+                // Add notification styling for Payments menu
+                item.title === "Payments" && hasNewRequests && "animate-flicker bg-gradient-to-r from-red-500 via-orange-500 to-red-500 bg-[length:200%_100%] text-white font-semibold shadow-lg"
               )}
             >
               <item.icon className="h-4 w-4" />
               {item.title}
+              {item.title === "Payments" && hasNewRequests && (
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-ping"></span>
+              )}
             </Link>
           ))}
         </nav>

@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DateRangePickerDialog } from '@/components/ui/date-range-picker-dialog';
 import type { DateRange } from 'react-day-picker';
+import { useWithdrawNotifications } from '@/hooks/use-withdraw-notifications';
 
 interface PaymentRecord {
   id: string;
@@ -66,6 +67,7 @@ export function WithdrawRequests() {
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [selectedPaymentHistory, setSelectedPaymentHistory] = useState<WithdrawRequest | null>(null);
   const { toast } = useToast();
+  const { clearNotification } = useWithdrawNotifications();
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -238,6 +240,8 @@ export function WithdrawRequests() {
   const handleProcessTransaction = (request: WithdrawRequest) => {
     setSelectedRequest(request);
     setIsDialogOpen(true);
+    // Clear notification when action button is clicked
+    clearNotification();
   };
 
   const handleFormSubmit = async (formData: {
