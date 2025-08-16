@@ -16,17 +16,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Download, MoreHorizontal, Copy, FileText, Loader2 } from 'lucide-react';
+import { Search, MoreHorizontal, Copy, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
 import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Transaction } from '@/lib/types';
+
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DateRangePickerDialog } from '@/components/ui/date-range-picker-dialog';
@@ -103,7 +98,7 @@ export function WithdrawRequests() {
               };
             });
           } catch (error) {
-            console.log('No payment history found for transaction:', doc.id);
+            // No payment history found for this transaction
           }
           
           // Extract unique payment methods and tags
@@ -1022,6 +1017,7 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
   const [paymentMethod, setPaymentMethod] = useState(request.paymentMethod || '');
   const [paymentTag, setPaymentTag] = useState('');
   const [paidAmount, setPaidAmount] = useState('0');
+  const { toast } = useToast();
   
   const currentPaidAmount = request.paidAmount || 0;
   const additionalPaidAmount = parseFloat(paidAmount) || 0;
@@ -1034,8 +1030,22 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
     const currentPaidAmount = request.paidAmount || 0;
     const totalPaidAmount = currentPaidAmount + additionalPaidAmount;
     
+    // Validation checks
+    if (additionalPaidAmount <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Additional amount must be greater than 0!",
+      });
+      return;
+    }
+    
     if (totalPaidAmount > request.amount) {
-      alert('Total paid amount cannot exceed total amount!');
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Total paid amount cannot exceed total amount!",
+      });
       return;
     }
     
@@ -1049,156 +1059,189 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
     });
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-             <div className="space-y-2">
-         <Label htmlFor="playerName">Player Name</Label>
-         <Input
-           id="playerName"
-           name="playerName"
-           value={request.playerName}
-           disabled
-           className="bg-muted"
-         />
-       </div>
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Only allow numeric input (no decimals, no negative)
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Convert to number for validation
+    const numValue = parseInt(numericValue) || 0;
+    const currentPaidAmount = request.paidAmount || 0;
+    const maxAllowed = request.amount - currentPaidAmount;
+    
+    // If input exceeds max allowed, cap it
+    if (numValue > maxAllowed) {
+      setPaidAmount(maxAllowed.toString());
+    } else {
+      setPaidAmount(numericValue);
+    }
+  };
 
-      {/* Payment History Section */}
-      {request.paymentHistory && request.paymentHistory.length > 0 && (
-        <div className="space-y-2">
-          <Label>Payment History</Label>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {request.paymentHistory
-              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-              .map((payment, index) => (
-                <div key={payment.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
-                  <div>
-                    <span className="font-medium">${payment.amount.toLocaleString()}</span>
-                    <span className="text-muted-foreground ml-2">
-                      {payment.method} - {payment.tag}
-                    </span>
-                  </div>
-                  <span className="text-muted-foreground text-xs">
-                    {format(new Date(payment.date), "MMM dd, h:mm a")}
-                  </span>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
+     return (
+     <form onSubmit={handleSubmit} className="space-y-4">
+               {/* Payment History Section - Full Width */}
+        {request.paymentHistory && request.paymentHistory.length > 0 && (
+          <div className="space-y-2">
+            <Label>Payment History</Label>
+           <div className="space-y-2 max-h-24 overflow-y-auto">
+             {request.paymentHistory
+               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+               .map((payment, index) => (
+                 <div key={payment.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
+                   <div>
+                     <span className="font-medium">${payment.amount.toLocaleString()}</span>
+                     <span className="text-muted-foreground ml-2">
+                       {payment.method} - {payment.tag}
+                     </span>
+                   </div>
+                   <span className="text-muted-foreground text-xs">
+                     {format(new Date(payment.date), "MMM dd, h:mm a")}
+                   </span>
+                 </div>
+               ))}
+           </div>
+         </div>
+       )}
 
-             <div className="space-y-2">
-         <Label htmlFor="playerTag">Player Tag</Label>
-         <div className="flex items-center space-x-2">
+       {/* First Row - Player Info */}
+       <div className="grid grid-cols-2 gap-4">
+         <div className="space-y-2">
+           <Label htmlFor="playerName">Player Name</Label>
            <Input
-             id="playerTag"
-             name="playerTag"
-             value={request.playerTag || ''}
+             id="playerName"
+             name="playerName"
+             value={request.playerName}
              disabled
-             className="bg-muted flex-1"
+             className="bg-muted"
            />
-           <Button
-             type="button"
-             variant="outline"
-             size="sm"
-             onClick={() => {
-               navigator.clipboard.writeText(request.playerTag || '');
-             }}
-             className="shrink-0"
-           >
-             Copy
-           </Button>
+         </div>
+         <div className="space-y-2">
+           <Label htmlFor="playerTag">Player Tag</Label>
+           <div className="flex items-center space-x-2">
+             <Input
+               id="playerTag"
+               name="playerTag"
+               value={request.playerTag || ''}
+               disabled
+               className="bg-muted flex-1"
+             />
+             <Button
+               type="button"
+               variant="outline"
+               size="sm"
+               onClick={() => {
+                 navigator.clipboard.writeText(request.playerTag || '');
+               }}
+               className="shrink-0"
+             >
+               Copy
+             </Button>
+           </div>
          </div>
        </div>
 
-             <div className="space-y-2">
-         <Label htmlFor="amount">Amount</Label>
-         <Input
-           id="amount"
-           name="amount"
-           value={`$${request.amount.toLocaleString()}`}
-           disabled
-           className="bg-muted"
-         />
+       {/* Second Row - Amount Info */}
+       <div className="grid grid-cols-3 gap-4">
+         <div className="space-y-2">
+           <Label htmlFor="amount">Total Amount</Label>
+           <Input
+             id="amount"
+             name="amount"
+             value={`$${request.amount.toLocaleString()}`}
+             disabled
+             className="bg-muted"
+           />
+         </div>
+                   <div className="space-y-2">
+            <Label htmlFor="paidAmount">Additional Amount</Label>
+                         <Input
+               id="paidAmount"
+               name="paidAmount"
+               type="text"
+               value={paidAmount}
+               onChange={handleAmountChange}
+               placeholder="Enter amount"
+               disabled={pendingAmount === 0}
+               className={`font-semibold ${pendingAmount === 0 ? 'bg-muted cursor-not-allowed' : ''}`}
+             />
+             {pendingAmount > 0 && (
+               <p className="text-xs text-muted-foreground">
+                 Max allowed: ${(request.amount - (request.paidAmount || 0)).toLocaleString()}
+               </p>
+             )}
+          </div>
+         <div className="space-y-2">
+           <Label htmlFor="pendingAmount">Pending Amount</Label>
+           <Input
+             id="pendingAmount"
+             name="pendingAmount"
+             value={`$${pendingAmount.toLocaleString()}`}
+             disabled
+             className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
+           />
+         </div>
        </div>
 
-             <div className="space-y-2">
-         <Label htmlFor="paidAmount">Additional Amount to Pay</Label>
-         <Input
-           id="paidAmount"
-           name="paidAmount"
-           type="number"
-           value={paidAmount}
-           onChange={(e) => setPaidAmount(e.target.value)}
-           placeholder="Enter additional amount to pay"
-           className={`font-semibold ${totalPaidAmount > request.amount ? 'border-red-500' : ''}`}
-         />
-         <p className="text-sm text-muted-foreground">
-           Already paid: ${request.paidAmount?.toLocaleString() || '0'}
-         </p>
-         {totalPaidAmount > request.amount && (
-           <p className="text-sm text-red-500">Total amount cannot exceed ${request.amount.toLocaleString()}</p>
-         )}
-       </div>
-
-             <div className="space-y-2">
-         <Label htmlFor="pendingAmount">Pending Amount</Label>
-         <Input
-           id="pendingAmount"
-           name="pendingAmount"
-           value={`$${pendingAmount.toLocaleString()}`}
-           disabled
-           className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
-         />
-       </div>
-
-             <div className="space-y-2">
-         <Label htmlFor="paymentMethod">Payment Method</Label>
-         <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-           <SelectTrigger id="paymentMethod" name="paymentMethod">
-             <SelectValue placeholder="Select payment method" />
-           </SelectTrigger>
-           <SelectContent>
-             <SelectItem value="CashApp">CashApp</SelectItem>
-             <SelectItem value="Chime">Chime</SelectItem>
-           </SelectContent>
-         </Select>
-       </div>
-
-             <div className="space-y-2">
-         <Label htmlFor="paymentTag">Payment Tag</Label>
-         <Input
-           id="paymentTag"
-           name="paymentTag"
-           value={paymentTag}
-           onChange={(e) => setPaymentTag(e.target.value)}
-           placeholder="Enter payment tag"
-         />
-       </div>
-
-             <div className="space-y-2">
-         <Label htmlFor="status">Status</Label>
-         <Input
-           id="status"
-           name="status"
-           value={pendingAmount === 0 ? 'Completed' : 'Pending'}
-           disabled
-           className="bg-muted font-semibold"
-         />
-       </div>
-
-      <div className="flex justify-between pt-4">
-        <Button type="button" variant="destructive" onClick={onDelete}>
-          Delete Transaction
-        </Button>
-        <div className="flex space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit">
-            Process Transaction
-          </Button>
+               {/* Third Row - Payment Details */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Payment Method</Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={pendingAmount === 0}>
+              <SelectTrigger id="paymentMethod" name="paymentMethod" className={pendingAmount === 0 ? 'bg-muted cursor-not-allowed' : ''}>
+                <SelectValue placeholder="Select method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CashApp">CashApp</SelectItem>
+                <SelectItem value="Chime">Chime</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="paymentTag">Payment Tag</Label>
+            <Input
+              id="paymentTag"
+              name="paymentTag"
+              value={paymentTag}
+              onChange={(e) => setPaymentTag(e.target.value)}
+              placeholder="Enter payment tag"
+              disabled={pendingAmount === 0}
+              className={pendingAmount === 0 ? 'bg-muted cursor-not-allowed' : ''}
+            />
+          </div>
+                    <div className="space-y-2">
+             <Label htmlFor="status">Status</Label>
+             <Input
+               id="status"
+               name="status"
+               value={pendingAmount === 0 ? 'Completed' : 'Pending'}
+               disabled
+               className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
+             />
+           </div>
         </div>
-      </div>
-    </form>
-  );
+
+       {/* Error Message */}
+       {totalPaidAmount > request.amount && (
+         <p className="text-sm text-red-500 text-center">
+           Total amount cannot exceed ${request.amount.toLocaleString()}
+         </p>
+       )}
+
+       {/* Action Buttons */}
+       <div className="flex justify-between pt-4">
+         <Button type="button" variant="destructive" onClick={onDelete} id="delete-transaction" name="delete-transaction">
+           Delete Transaction
+         </Button>
+         <div className="flex space-x-2">
+           <Button type="button" variant="outline" onClick={onCancel} id="cancel-transaction" name="cancel-transaction">
+             Cancel
+           </Button>
+           <Button type="submit" id="submit-transaction" name="submit-transaction">
+             Process Transaction
+           </Button>
+         </div>
+       </div>
+     </form>
+   );
 }
