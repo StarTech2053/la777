@@ -8,78 +8,53 @@ body {
 
 @layer base {
   :root {
-    --background: 216 33% 99%; /* #f8fafc */
-    --foreground: 222 28% 18%; /* #1e293b */
-
-    --card: 0 0% 100%; /* #ffffff */
-    --card-foreground: 222 28% 18%; /* #1e293b */
- 
-    --popover: 0 0% 100%; /* #ffffff */
-    --popover-foreground: 222 28% 18%; /* #1e293b */
- 
-    --primary: 221 83% 53%; /* #2563eb */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
- 
-    --secondary: 215 14% 47%; /* #64748b */
-    --secondary-foreground: 210 40% 98%;
- 
-    --muted: 220 13% 91%; /* #e2e8f0 */
-    --muted-foreground: 215 14% 47%; /* #64748b */
- 
-    --accent: 45 96% 59%; /* #fbbf24 */
-    --accent-foreground: 222 28% 18%; /* #1e293b */
- 
-    --destructive: 0 84% 60%; /* #ef4444 */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
-    --success: 142 76% 36%; /* #22c55e */
-    --success-foreground: 210 40% 98%;
-
-    --border: 220 13% 91%; /* #e2e8f0 */
-    --input: 220 13% 91%; /* #e2e8f0 */
-    --ring: 221 83% 53%; /* #2563eb */
- 
-    --radius: 0.5rem;
-
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
   }
- 
+
   .dark {
-    --background: 240 5% 10%; /* #18181b */
-    --foreground: 215 16% 91%; /* #f1f5f9 */
- 
-    --card: 223 11% 16%; /* #23272f */
-    --card-foreground: 215 16% 91%; /* #f1f5f9 */
- 
-    --popover: 223 11% 16%; /* #23272f */
-    --popover-foreground: 215 16% 91%; /* #f1f5f9 */
- 
-    --primary: 214 94% 68%; /* #60a5fa */
-    --primary-foreground: 222 28% 18%; /* #1e293b */
- 
-    --secondary: 216 12% 84%; /* #cbd5e1 */
-    --secondary-foreground: 222 28% 18%; /* #1e293b */
- 
-    --muted: 222 17% 27%; /* #334155 */
-    --muted-foreground: 216 12% 65%; /* #94a3b8 */
- 
-    --accent: 45 96% 59%; /* #fbbf24 */
-    --accent-foreground: 222 28% 18%; /* #1e293b */
- 
-    --destructive: 0 91% 71%; /* #f87171 */
-    --destructive-foreground: 222 28% 18%; /* #1e293b */
- 
-    --success: 142 71% 45%; /* #34d399 */
-    --success-foreground: 222 28% 18%; /* #1e293b */
-
-    --border: 222 17% 27%; /* #334155 */
-    --input: 222 17% 27%; /* #334155 */
-    --ring: 214 94% 68%; /* #60a5fa */
-
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -87,7 +62,7 @@ body {
     --chart-5: 340 75% 55%;
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
@@ -115,6 +90,26 @@ body {
       background-position: 100% 50%;
     }
   }
+}
+
+/* Custom flicker animation for withdraw notifications */
+@keyframes flicker {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 100% 50%;
+  }
+  50% {
+    background-position: 0% 50%;
+  }
+  75% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-flicker {
+  animation: flicker 2s ease-in-out infinite;
 }
 
     

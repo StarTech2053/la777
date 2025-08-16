@@ -1,16 +1,40 @@
+"use client";
+
 import { PaymentTagsCard } from "@/components/payments/payment-tags";
 import { PaymentsTable } from "./(components)/payments-table";
 import { WithdrawRequests } from "@/components/payments/withdraw-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWithdrawNotifications } from "@/hooks/use-withdraw-notifications";
+import { cn } from "@/lib/utils";
 
 export default function PaymentsPage() {
+  const { hasNewRequests, clearNotification } = useWithdrawNotifications();
+
+  const handleWithdrawTabClick = () => {
+    if (hasNewRequests) {
+      clearNotification();
+    }
+  };
+
   return (
     <div className="space-y-4">
        <Tabs defaultValue="tag">
         <TabsList>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="tag">Tag</TabsTrigger>
-          <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+          <TabsTrigger 
+            value="withdraw" 
+            onClick={handleWithdrawTabClick}
+            className={cn(
+              "relative transition-all duration-300",
+              hasNewRequests && "animate-flicker bg-gradient-to-r from-red-500 via-orange-500 to-red-500 bg-[length:200%_100%] text-white font-semibold shadow-lg"
+            )}
+          >
+            Withdraw
+            {hasNewRequests && (
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-ping"></span>
+            )}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="payments">
             <div className="rounded-lg border shadow-sm mt-4">

@@ -392,310 +392,8 @@ export function WithdrawRequests() {
                       <TabsTrigger value="complete">Complete</TabsTrigger>
                     </TabsList>
                  </div>
-                                 <TabsContent value="overview" className="m-0">
-                   <div className="relative w-full overflow-auto">
-                 <Table>
-                   <TableHeader>
-                     <TableRow>
-                       <TableHead>Date</TableHead>
-                       <TableHead>Time</TableHead>
-                       <TableHead>Staff</TableHead>
-                       <TableHead>Player Tag</TableHead>
-                       <TableHead>Method</TableHead>
-                       <TableHead>Amount</TableHead>
-                       <TableHead>Tag</TableHead>
-                       <TableHead>Pending Amount</TableHead>
-                       <TableHead>Paid Amount</TableHead>
-                       <TableHead>Status</TableHead>
-                       <TableHead>Action</TableHead>
-                     </TableRow>
-                   </TableHeader>
-                   <TableBody>
-                     {filteredRequests.length > 0 ? (
-                       filteredRequests.map((request) => (
-                         <TableRow key={request.id}>
-                           <TableCell className="font-medium">
-                             {format(new Date(request.date), "MM/dd/yyyy")}
-                           </TableCell>
-                           <TableCell>
-                             {format(new Date(request.date), "h:mm a")}
-                           </TableCell>
-                           <TableCell className="text-muted-foreground">
-                             {request.staffName || 'N/A'}
-                           </TableCell>
-                           <TableCell className="font-medium text-blue-600">
-                             <div className="flex items-center gap-2">
-                               <span>{request.playerTag}</span>
-                               <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 className="h-6 w-6 p-0 hover:bg-blue-100"
-                                 onClick={() => handleCopyPlayerTag(request.playerTag || '')}
-                               >
-                                 <Copy className="h-3 w-3 text-blue-600" />
-                               </Button>
-                             </div>
-                           </TableCell>
-                           <TableCell>
-                             {request.paymentMethods && request.paymentMethods.length > 1 
-                               ? request.paymentMethods.join(' + ')
-                               : request.paymentMethod
-                             }
-                           </TableCell>
-                           <TableCell className="text-destructive font-semibold">
-                             -${request.amount.toLocaleString()}
-                           </TableCell>
-                           <TableCell className="text-green-600 font-medium">
-                             {request.paymentTags && request.paymentTags.length > 1 
-                               ? request.paymentTags.join(' + ')
-                               : request.paymentTag
-                             }
-                           </TableCell>
-                           <TableCell className="text-orange-600 font-semibold">
-                             ${request.pendingAmount?.toLocaleString() || '0'}
-                           </TableCell>
-                           <TableCell className="text-green-600 font-semibold">
-                             ${request.paidAmount?.toLocaleString() || '0'}
-                           </TableCell>
-                           <TableCell>
-                             {getStatusBadge(request.status)}
-                           </TableCell>
-                           <TableCell>
-                             <div className="flex items-center gap-1">
-                               <Button 
-                                 variant="ghost" 
-                                 className="h-8 w-8 p-0"
-                                 onClick={() => handleProcessTransaction(request)}
-                               >
-                                 <span className="sr-only">Open transaction form</span>
-                                 <MoreHorizontal className="h-4 w-4" />
-                               </Button>
-                               {request.paymentHistory && request.paymentHistory.length > 0 && (
-                                 <Button 
-                                   variant="ghost" 
-                                   className="h-8 w-8 p-0"
-                                   onClick={() => {
-                                     setSelectedPaymentHistory(request);
-                                     setIsPaymentHistoryOpen(true);
-                                   }}
-                                 >
-                                   <span className="sr-only">View payment history</span>
-                                   <FileText className="h-4 w-4" />
-                                 </Button>
-                               )}
-                             </div>
-                           </TableCell>
-                         </TableRow>
-                       ))
-                     ) : (
-                       <TableRow>
-                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
-                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
-                         </TableCell>
-                       </TableRow>
-                     )}
-                   </TableBody>
-                 </Table>
-               </div>
-             </TabsContent>
-                         <TabsContent value="chime" className="m-0">
-               <div className="relative w-full overflow-auto">
-                 <Table>
-                   <TableHeader>
-                     <TableRow>
-                       <TableHead>Date</TableHead>
-                       <TableHead>Time</TableHead>
-                       <TableHead>Staff</TableHead>
-                       <TableHead>Player Tag</TableHead>
-                       <TableHead>Method</TableHead>
-                       <TableHead>Amount</TableHead>
-                       <TableHead>Tag</TableHead>
-                       <TableHead>Pending Amount</TableHead>
-                       <TableHead>Paid Amount</TableHead>
-                       <TableHead>Status</TableHead>
-                       <TableHead>Action</TableHead>
-                     </TableRow>
-                   </TableHeader>
-                   <TableBody>
-                     {filteredRequests.length > 0 ? (
-                       filteredRequests.map((request) => (
-                         <TableRow key={request.id}>
-                           <TableCell className="font-medium">
-                             {format(new Date(request.date), "MM/dd/yyyy")}
-                           </TableCell>
-                           <TableCell>
-                             {format(new Date(request.date), "h:mm a")}
-                           </TableCell>
-                           <TableCell className="text-muted-foreground">
-                             {request.staffName || 'N/A'}
-                           </TableCell>
-                           <TableCell className="font-medium text-blue-600">
-                             <div className="flex items-center gap-2">
-                               <span>{request.playerTag}</span>
-                               <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 className="h-6 w-6 p-0 hover:bg-blue-100"
-                                 onClick={() => handleCopyPlayerTag(request.playerTag || '')}
-                               >
-                                 <Copy className="h-3 w-3 text-blue-600" />
-                               </Button>
-                             </div>
-                           </TableCell>
-                           <TableCell>{request.paymentMethod}</TableCell>
-                           <TableCell className="text-destructive font-semibold">
-                             -${request.amount.toLocaleString()}
-                           </TableCell>
-                           <TableCell className="text-green-600 font-medium">
-                             {request.paymentTag}
-                           </TableCell>
-                           <TableCell className="text-orange-600 font-semibold">
-                             ${request.pendingAmount?.toLocaleString() || '0'}
-                           </TableCell>
-                           <TableCell className="text-green-600 font-semibold">
-                             ${request.paidAmount?.toLocaleString() || '0'}
-                           </TableCell>
-                           <TableCell>
-                             {getStatusBadge(request.status)}
-                           </TableCell>
-                           <TableCell>
-                             <div className="flex items-center gap-1">
-                               <Button 
-                                 variant="ghost" 
-                                 className="h-8 w-8 p-0"
-                                 onClick={() => handleProcessTransaction(request)}
-                               >
-                                 <span className="sr-only">Open transaction form</span>
-                                 <MoreHorizontal className="h-4 w-4" />
-                               </Button>
-                               {request.paymentHistory && request.paymentHistory.length > 0 && (
-                                 <Button 
-                                   variant="ghost" 
-                                   className="h-8 w-8 p-0"
-                                   onClick={() => {
-                                     setSelectedPaymentHistory(request);
-                                     setIsPaymentHistoryOpen(true);
-                                   }}
-                                 >
-                                   <span className="sr-only">View payment history</span>
-                                   <FileText className="h-4 w-4" />
-                                 </Button>
-                               )}
-                             </div>
-                           </TableCell>
-                         </TableRow>
-                       ))
-                     ) : (
-                       <TableRow>
-                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
-                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
-                         </TableCell>
-                       </TableRow>
-                     )}
-                   </TableBody>
-                 </Table>
-               </div>
-             </TabsContent>
-                         <TabsContent value="cashapp" className="m-0">
-               <div className="relative w-full overflow-auto">
-                 <Table>
-                   <TableHeader>
-                     <TableRow>
-                       <TableHead>Date</TableHead>
-                       <TableHead>Time</TableHead>
-                       <TableHead>Staff</TableHead>
-                       <TableHead>Player Tag</TableHead>
-                       <TableHead>Method</TableHead>
-                       <TableHead>Amount</TableHead>
-                       <TableHead>Tag</TableHead>
-                       <TableHead>Pending Amount</TableHead>
-                       <TableHead>Paid Amount</TableHead>
-                       <TableHead>Status</TableHead>
-                       <TableHead>Action</TableHead>
-                     </TableRow>
-                   </TableHeader>
-                   <TableBody>
-                     {filteredRequests.length > 0 ? (
-                       filteredRequests.map((request) => (
-                         <TableRow key={request.id}>
-                           <TableCell className="font-medium">
-                             {format(new Date(request.date), "MM/dd/yyyy")}
-                           </TableCell>
-                           <TableCell>
-                             {format(new Date(request.date), "h:mm a")}
-                           </TableCell>
-                           <TableCell className="text-muted-foreground">
-                             {request.staffName || 'N/A'}
-                           </TableCell>
-                           <TableCell className="font-medium text-blue-600">
-                             <div className="flex items-center gap-2">
-                               <span>{request.playerTag}</span>
-                               <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 className="h-6 w-6 p-0 hover:bg-blue-100"
-                                 onClick={() => handleCopyPlayerTag(request.playerTag || '')}
-                               >
-                                 <Copy className="h-3 w-3 text-blue-600" />
-                               </Button>
-                             </div>
-                           </TableCell>
-                           <TableCell>{request.paymentMethod}</TableCell>
-                           <TableCell className="text-destructive font-semibold">
-                             -${request.amount.toLocaleString()}
-                           </TableCell>
-                           <TableCell className="text-green-600 font-medium">
-                             {request.paymentTag}
-                           </TableCell>
-                           <TableCell className="text-orange-600 font-semibold">
-                             ${request.pendingAmount?.toLocaleString() || '0'}
-                           </TableCell>
-                           <TableCell className="text-green-600 font-semibold">
-                             ${request.paidAmount?.toLocaleString() || '0'}
-                           </TableCell>
-                           <TableCell>
-                             {getStatusBadge(request.status)}
-                           </TableCell>
-                           <TableCell>
-                             <div className="flex items-center gap-1">
-                               <Button 
-                                 variant="ghost" 
-                                 className="h-8 w-8 p-0"
-                                 onClick={() => handleProcessTransaction(request)}
-                               >
-                                 <span className="sr-only">Open transaction form</span>
-                                 <MoreHorizontal className="h-4 w-4" />
-                               </Button>
-                               {request.paymentHistory && request.paymentHistory.length > 0 && (
-                                 <Button 
-                                   variant="ghost" 
-                                   className="h-8 w-8 p-0"
-                                   onClick={() => {
-                                     setSelectedPaymentHistory(request);
-                                     setIsPaymentHistoryOpen(true);
-                                   }}
-                                 >
-                                   <span className="sr-only">View payment history</span>
-                                   <FileText className="h-4 w-4" />
-                                 </Button>
-                               )}
-                             </div>
-                           </TableCell>
-                         </TableRow>
-                       ))
-                     ) : (
-                       <TableRow>
-                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
-                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
-                         </TableCell>
-                       </TableRow>
-                     )}
-                   </TableBody>
-                 </Table>
-               </div>
-                          </TabsContent>
-                           <TabsContent value="pending" className="m-0">
-                <div className="relative w-full overflow-auto">
+                                                                   <TabsContent value="overview" className="m-0">
+                    <div className="relative w-full overflow-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -738,13 +436,368 @@ export function WithdrawRequests() {
                                 </Button>
                               </div>
                             </TableCell>
-                            <TableCell>{request.paymentMethod}</TableCell>
+                            <TableCell>
+                              {request.paymentMethods && request.paymentMethods.length > 1 
+                                ? request.paymentMethods.join(' + ')
+                                : request.paymentMethod
+                              }
+                            </TableCell>
                             <TableCell className="text-destructive font-semibold">
                               -${request.amount.toLocaleString()}
                             </TableCell>
-                            <TableCell className="text-green-600 font-medium">
-                              {request.paymentTag}
-                            </TableCell>
+                                                        <TableCell className="text-green-600 font-medium">
+                               {request.paymentTags && request.paymentTags.length > 1 ? (
+                                 <Button
+                                   variant="ghost"
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               ) : (
+                                 request.paymentTag
+                               )}
+                             </TableCell>
+                           <TableCell className="text-orange-600 font-semibold">
+                             ${request.pendingAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-semibold">
+                             ${request.paidAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell>
+                             {getStatusBadge(request.status)}
+                           </TableCell>
+                           <TableCell>
+                             <div className="flex items-center gap-1">
+                               <Button 
+                                 variant="ghost" 
+                                 className="h-8 w-8 p-0"
+                                 onClick={() => handleProcessTransaction(request)}
+                               >
+                                 <span className="sr-only">Open transaction form</span>
+                                 <MoreHorizontal className="h-4 w-4" />
+                               </Button>
+                               {request.paymentHistory && request.paymentHistory.length > 0 && (
+                                 <Button 
+                                   variant="ghost" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               )}
+                             </div>
+                           </TableCell>
+                         </TableRow>
+                       ))
+                     ) : (
+                       <TableRow>
+                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                         </TableCell>
+                       </TableRow>
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+                           </TabsContent>
+                                                     <TabsContent value="chime" className="m-0">
+                 <div className="relative w-full overflow-auto">
+                   <Table>
+                     <TableHeader>
+                       <TableRow>
+                         <TableHead>Date</TableHead>
+                         <TableHead>Time</TableHead>
+                         <TableHead>Staff</TableHead>
+                         <TableHead>Player Tag</TableHead>
+                         <TableHead>Method</TableHead>
+                         <TableHead>Amount</TableHead>
+                         <TableHead>Tag</TableHead>
+                         <TableHead>Pending Amount</TableHead>
+                         <TableHead>Paid Amount</TableHead>
+                         <TableHead>Status</TableHead>
+                         <TableHead>Action</TableHead>
+                       </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                       {filteredRequests.length > 0 ? (
+                         filteredRequests.map((request) => (
+                           <TableRow key={request.id}>
+                             <TableCell className="font-medium">
+                               {format(new Date(request.date), "MM/dd/yyyy")}
+                             </TableCell>
+                             <TableCell>
+                               {format(new Date(request.date), "h:mm a")}
+                             </TableCell>
+                             <TableCell className="text-muted-foreground">
+                               {request.staffName || 'N/A'}
+                             </TableCell>
+                             <TableCell className="font-medium text-blue-600">
+                               <div className="flex items-center gap-2">
+                                 <span>{request.playerTag}</span>
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   className="h-6 w-6 p-0 hover:bg-blue-100"
+                                   onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                                 >
+                                   <Copy className="h-3 w-3 text-blue-600" />
+                                 </Button>
+                               </div>
+                             </TableCell>
+                             <TableCell>{request.paymentMethod}</TableCell>
+                             <TableCell className="text-destructive font-semibold">
+                               -${request.amount.toLocaleString()}
+                             </TableCell>
+                             <TableCell className="text-green-600 font-medium">
+                               {request.paymentTags && request.paymentTags.length > 1 ? (
+                                 <Button
+                                   variant="ghost"
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               ) : (
+                                 request.paymentTag
+                               )}
+                             </TableCell>
+                           <TableCell className="text-orange-600 font-semibold">
+                             ${request.pendingAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-semibold">
+                             ${request.paidAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell>
+                             {getStatusBadge(request.status)}
+                           </TableCell>
+                           <TableCell>
+                             <div className="flex items-center gap-1">
+                               <Button 
+                                 variant="ghost" 
+                                 className="h-8 w-8 p-0"
+                                 onClick={() => handleProcessTransaction(request)}
+                               >
+                                 <span className="sr-only">Open transaction form</span>
+                                 <MoreHorizontal className="h-4 w-4" />
+                               </Button>
+                               {request.paymentHistory && request.paymentHistory.length > 0 && (
+                                 <Button 
+                                   variant="ghost" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               )}
+                             </div>
+                           </TableCell>
+                         </TableRow>
+                       ))
+                     ) : (
+                       <TableRow>
+                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                         </TableCell>
+                       </TableRow>
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+                           </TabsContent>
+                                                     <TabsContent value="cashapp" className="m-0">
+                 <div className="relative w-full overflow-auto">
+                   <Table>
+                     <TableHeader>
+                       <TableRow>
+                         <TableHead>Date</TableHead>
+                         <TableHead>Time</TableHead>
+                         <TableHead>Staff</TableHead>
+                         <TableHead>Player Tag</TableHead>
+                         <TableHead>Method</TableHead>
+                         <TableHead>Amount</TableHead>
+                         <TableHead>Tag</TableHead>
+                         <TableHead>Pending Amount</TableHead>
+                         <TableHead>Paid Amount</TableHead>
+                         <TableHead>Status</TableHead>
+                         <TableHead>Action</TableHead>
+                       </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                       {filteredRequests.length > 0 ? (
+                         filteredRequests.map((request) => (
+                           <TableRow key={request.id}>
+                             <TableCell className="font-medium">
+                               {format(new Date(request.date), "MM/dd/yyyy")}
+                             </TableCell>
+                             <TableCell>
+                               {format(new Date(request.date), "h:mm a")}
+                             </TableCell>
+                             <TableCell className="text-muted-foreground">
+                               {request.staffName || 'N/A'}
+                             </TableCell>
+                             <TableCell className="font-medium text-blue-600">
+                               <div className="flex items-center gap-2">
+                                 <span>{request.playerTag}</span>
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   className="h-6 w-6 p-0 hover:bg-blue-100"
+                                   onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                                 >
+                                   <Copy className="h-3 w-3 text-blue-600" />
+                                 </Button>
+                               </div>
+                             </TableCell>
+                             <TableCell>{request.paymentMethod}</TableCell>
+                             <TableCell className="text-destructive font-semibold">
+                               -${request.amount.toLocaleString()}
+                             </TableCell>
+                             <TableCell className="text-green-600 font-medium">
+                               {request.paymentTags && request.paymentTags.length > 1 ? (
+                                 <Button
+                                   variant="ghost"
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               ) : (
+                                 request.paymentTag
+                               )}
+                             </TableCell>
+                           <TableCell className="text-orange-600 font-semibold">
+                             ${request.pendingAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-semibold">
+                             ${request.paidAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell>
+                             {getStatusBadge(request.status)}
+                           </TableCell>
+                           <TableCell>
+                             <div className="flex items-center gap-1">
+                               <Button 
+                                 variant="ghost" 
+                                 className="h-8 w-8 p-0"
+                                 onClick={() => handleProcessTransaction(request)}
+                               >
+                                 <span className="sr-only">Open transaction form</span>
+                                 <MoreHorizontal className="h-4 w-4" />
+                               </Button>
+                               {request.paymentHistory && request.paymentHistory.length > 0 && (
+                                 <Button 
+                                   variant="ghost" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               )}
+                             </div>
+                           </TableCell>
+                         </TableRow>
+                       ))
+                     ) : (
+                       <TableRow>
+                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                         </TableCell>
+                       </TableRow>
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+                                        </TabsContent>
+                                                         <TabsContent value="pending" className="m-0">
+                  <div className="relative w-full overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Staff</TableHead>
+                          <TableHead>Player Tag</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Tag</TableHead>
+                          <TableHead>Pending Amount</TableHead>
+                          <TableHead>Paid Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredRequests.length > 0 ? (
+                          filteredRequests.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell className="font-medium">
+                                {format(new Date(request.date), "MM/dd/yyyy")}
+                              </TableCell>
+                              <TableCell>
+                                {format(new Date(request.date), "h:mm a")}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {request.staffName || 'N/A'}
+                              </TableCell>
+                              <TableCell className="font-medium text-blue-600">
+                                <div className="flex items-center gap-2">
+                                  <span>{request.playerTag}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 hover:bg-blue-100"
+                                    onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                                  >
+                                    <Copy className="h-3 w-3 text-blue-600" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                              <TableCell>{request.paymentMethod}</TableCell>
+                              <TableCell className="text-destructive font-semibold">
+                                -${request.amount.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-green-600 font-medium">
+                                {request.paymentTags && request.paymentTags.length > 1 ? (
+                                  <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                      setSelectedPaymentHistory(request);
+                                      setIsPaymentHistoryOpen(true);
+                                    }}
+                                  >
+                                    <span className="sr-only">View payment history</span>
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                ) : (
+                                  request.paymentTag
+                                )}
+                              </TableCell>
                             <TableCell className="text-orange-600 font-semibold">
                               ${request.pendingAmount?.toLocaleString() || '0'}
                             </TableCell>
@@ -791,58 +844,72 @@ export function WithdrawRequests() {
                     </TableBody>
                   </Table>
                 </div>
-              </TabsContent>
-                           <TabsContent value="complete" className="m-0">
-                <div className="relative w-full overflow-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Staff</TableHead>
-                        <TableHead>Player Tag</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Tag</TableHead>
-                        <TableHead>Pending Amount</TableHead>
-                        <TableHead>Paid Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredRequests.length > 0 ? (
-                        filteredRequests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell className="font-medium">
-                              {format(new Date(request.date), "MM/dd/yyyy")}
-                            </TableCell>
-                            <TableCell>
-                              {format(new Date(request.date), "h:mm a")}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {request.staffName || 'N/A'}
-                            </TableCell>
-                            <TableCell className="font-medium text-blue-600">
-                              <div className="flex items-center gap-2">
-                                <span>{request.playerTag}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 hover:bg-blue-100"
-                                  onClick={() => handleCopyPlayerTag(request.playerTag || '')}
-                                >
-                                  <Copy className="h-3 w-3 text-blue-600" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                            <TableCell>{request.paymentMethod}</TableCell>
-                            <TableCell className="text-destructive font-semibold">
-                              -${request.amount.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-green-600 font-medium">
-                              {request.paymentTag}
-                            </TableCell>
+                            </TabsContent>
+                                                         <TabsContent value="complete" className="m-0">
+                  <div className="relative w-full overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Staff</TableHead>
+                          <TableHead>Player Tag</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Tag</TableHead>
+                          <TableHead>Pending Amount</TableHead>
+                          <TableHead>Paid Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredRequests.length > 0 ? (
+                          filteredRequests.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell className="font-medium">
+                                {format(new Date(request.date), "MM/dd/yyyy")}
+                              </TableCell>
+                              <TableCell>
+                                {format(new Date(request.date), "h:mm a")}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {request.staffName || 'N/A'}
+                              </TableCell>
+                              <TableCell className="font-medium text-blue-600">
+                                <div className="flex items-center gap-2">
+                                  <span>{request.playerTag}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 hover:bg-blue-100"
+                                    onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                                  >
+                                    <Copy className="h-3 w-3 text-blue-600" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                              <TableCell>{request.paymentMethod}</TableCell>
+                              <TableCell className="text-destructive font-semibold">
+                                -${request.amount.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-green-600 font-medium">
+                                {request.paymentTags && request.paymentTags.length > 1 ? (
+                                  <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                      setSelectedPaymentHistory(request);
+                                      setIsPaymentHistoryOpen(true);
+                                    }}
+                                  >
+                                    <span className="sr-only">View payment history</span>
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                ) : (
+                                  request.paymentTag
+                                )}
+                              </TableCell>
                             <TableCell className="text-orange-600 font-semibold">
                               ${request.pendingAmount?.toLocaleString() || '0'}
                             </TableCell>
