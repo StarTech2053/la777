@@ -24,13 +24,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { collection, onSnapshot, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DateRangePickerDialog } from '@/components/ui/date-range-picker-dialog';
 import type { DateRange } from 'react-day-picker';
+
+interface PaymentRecord {
+  id: string;
+  date: string;
+  amount: number;
+  method: string;
+  tag: string;
+  paidBy: string;
+  staffName: string;
+}
 
 interface WithdrawRequest {
   id: string;
@@ -45,6 +55,9 @@ interface WithdrawRequest {
   playerTag?: string;
   pendingAmount?: number;
   paidAmount?: number;
+  paymentMethods?: string[];
+  paymentTags?: string[];
+  paymentHistory?: PaymentRecord[];
 }
 
 export function WithdrawRequests() {
@@ -55,6 +68,8 @@ export function WithdrawRequests() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDateRangePickerOpen, setIsDateRangePickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
+  const [selectedPaymentHistory, setSelectedPaymentHistory] = useState<WithdrawRequest | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,13 +78,39 @@ export function WithdrawRequests() {
         collection(db, 'transactions'),
         where('type', '==', 'Withdraw')
       ),
-      (querySnapshot) => {
-        const requests: WithdrawRequest[] = querySnapshot.docs.map(doc => {
+      async (querySnapshot) => {
+        const requests: WithdrawRequest[] = [];
+        
+        for (const doc of querySnapshot.docs) {
           const data = doc.data();
           const amount = data.amount || 0;
           const status = data.status || 'pending';
           
-          return {
+          // Fetch payment history from subcollection
+          let paymentHistory: PaymentRecord[] = [];
+          try {
+            const paymentsSnapshot = await getDocs(collection(db, 'transactions', doc.id, 'payments'));
+            paymentHistory = paymentsSnapshot.docs.map(paymentDoc => {
+              const paymentData = paymentDoc.data();
+              return {
+                id: paymentDoc.id,
+                date: paymentData.date,
+                amount: paymentData.amount || 0,
+                method: paymentData.method || 'N/A',
+                tag: paymentData.tag || 'N/A',
+                paidBy: paymentData.paidBy || 'N/A',
+                staffName: paymentData.staffName || 'N/A'
+              };
+            });
+          } catch (error) {
+            console.log('No payment history found for transaction:', doc.id);
+          }
+          
+          // Extract unique payment methods and tags
+          const paymentMethods = [...new Set(paymentHistory.map(p => p.method))];
+          const paymentTags = [...new Set(paymentHistory.map(p => p.tag))];
+          
+          requests.push({
             id: doc.id,
             playerName: data.playerName || 'Unknown',
             amount: amount,
@@ -81,9 +122,12 @@ export function WithdrawRequests() {
             paymentTag: data.paymentTag || 'N/A',
             playerTag: data.playerTag || data.playerName || 'N/A',
             paidAmount: data.paidAmount || 0,
-            pendingAmount: Math.max(0, amount - (data.paidAmount || 0))
-          };
-        });
+            pendingAmount: Math.max(0, amount - (data.paidAmount || 0)),
+            paymentMethods: paymentMethods.length > 0 ? paymentMethods : [data.paymentMethod || 'N/A'],
+            paymentTags: paymentTags.length > 0 ? paymentTags : [data.paymentTag || 'N/A'],
+            paymentHistory: paymentHistory
+          });
+        }
         
         const activeRequests = requests.filter(request => request.status !== 'deleted');
         const sortedRequests = activeRequests.sort((a, b) => 
@@ -216,6 +260,7 @@ export function WithdrawRequests() {
       const totalPaidAmount = currentPaidAmount + additionalPaidAmount;
       const newPendingAmount = Math.max(0, selectedRequest.amount - totalPaidAmount);
       
+      // Update main transaction
       await updateDoc(transactionRef, {
         paymentMethod: formData.paymentMethod,
         paymentTag: formData.paymentTag,
@@ -223,6 +268,20 @@ export function WithdrawRequests() {
         paidAmount: totalPaidAmount,
         pendingAmount: newPendingAmount
       });
+
+      // Add payment record to subcollection
+      if (additionalPaidAmount > 0) {
+        const paymentRecord = {
+          date: new Date().toISOString(),
+          amount: additionalPaidAmount,
+          method: formData.paymentMethod,
+          tag: formData.paymentTag,
+          paidBy: 'current-user', // You can get this from auth context
+          staffName: 'Current Staff' // You can get this from auth context
+        };
+
+        await addDoc(collection(db, 'transactions', selectedRequest.id, 'payments'), paymentRecord);
+      }
       
       toast({
         variant: "success",
@@ -338,89 +397,112 @@ export function WithdrawRequests() {
                       <TabsTrigger value="complete">Complete</TabsTrigger>
                     </TabsList>
                  </div>
-                <TabsContent value="overview" className="m-0">
-                  <div className="relative w-full overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Staff</TableHead>
-                      <TableHead>Player Tag</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Tag</TableHead>
-                      <TableHead>Pending Amount</TableHead>
-                      <TableHead>Paid Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRequests.length > 0 ? (
-                      filteredRequests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-medium">
-                            {format(new Date(request.date), "MM/dd/yyyy")}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(request.date), "h:mm a")}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {request.staffName || 'N/A'}
-                          </TableCell>
-                          <TableCell className="font-medium text-blue-600">
-                            <div className="flex items-center gap-2">
-                              <span>{request.playerTag}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 hover:bg-blue-100"
-                                onClick={() => handleCopyPlayerTag(request.playerTag || '')}
-                              >
-                                <Copy className="h-3 w-3 text-blue-600" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>{request.paymentMethod}</TableCell>
-                          <TableCell className="text-destructive font-semibold">
-                            -${request.amount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-green-600 font-medium">
-                            {request.paymentTag}
-                          </TableCell>
-                          <TableCell className="text-orange-600 font-semibold">
-                            ${request.pendingAmount?.toLocaleString() || '0'}
-                          </TableCell>
-                          <TableCell className="text-green-600 font-semibold">
-                            ${request.paidAmount?.toLocaleString() || '0'}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(request.status)}
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              className="h-8 w-8 p-0"
-                              onClick={() => handleProcessTransaction(request)}
-                            >
-                              <span className="sr-only">Open transaction form</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
-                          {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
+                                 <TabsContent value="overview" className="m-0">
+                   <div className="relative w-full overflow-auto">
+                 <Table>
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead>Date</TableHead>
+                       <TableHead>Time</TableHead>
+                       <TableHead>Staff</TableHead>
+                       <TableHead>Player Tag</TableHead>
+                       <TableHead>Method</TableHead>
+                       <TableHead>Amount</TableHead>
+                       <TableHead>Tag</TableHead>
+                       <TableHead>Pending Amount</TableHead>
+                       <TableHead>Paid Amount</TableHead>
+                       <TableHead>Status</TableHead>
+                       <TableHead>Action</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {filteredRequests.length > 0 ? (
+                       filteredRequests.map((request) => (
+                         <TableRow key={request.id}>
+                           <TableCell className="font-medium">
+                             {format(new Date(request.date), "MM/dd/yyyy")}
+                           </TableCell>
+                           <TableCell>
+                             {format(new Date(request.date), "h:mm a")}
+                           </TableCell>
+                           <TableCell className="text-muted-foreground">
+                             {request.staffName || 'N/A'}
+                           </TableCell>
+                           <TableCell className="font-medium text-blue-600">
+                             <div className="flex items-center gap-2">
+                               <span>{request.playerTag}</span>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="h-6 w-6 p-0 hover:bg-blue-100"
+                                 onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                               >
+                                 <Copy className="h-3 w-3 text-blue-600" />
+                               </Button>
+                             </div>
+                           </TableCell>
+                           <TableCell>
+                             {request.paymentMethods && request.paymentMethods.length > 1 
+                               ? request.paymentMethods.join(' + ')
+                               : request.paymentMethod
+                             }
+                           </TableCell>
+                           <TableCell className="text-destructive font-semibold">
+                             -${request.amount.toLocaleString()}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-medium">
+                             {request.paymentTags && request.paymentTags.length > 1 
+                               ? request.paymentTags.join(' + ')
+                               : request.paymentTag
+                             }
+                           </TableCell>
+                           <TableCell className="text-orange-600 font-semibold">
+                             ${request.pendingAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-semibold">
+                             ${request.paidAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell>
+                             {getStatusBadge(request.status)}
+                           </TableCell>
+                           <TableCell>
+                             <div className="flex items-center gap-1">
+                               <Button 
+                                 variant="ghost" 
+                                 className="h-8 w-8 p-0"
+                                 onClick={() => handleProcessTransaction(request)}
+                               >
+                                 <span className="sr-only">Open transaction form</span>
+                                 <MoreHorizontal className="h-4 w-4" />
+                               </Button>
+                               {request.paymentHistory && request.paymentHistory.length > 0 && (
+                                 <Button 
+                                   variant="ghost" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => {
+                                     setSelectedPaymentHistory(request);
+                                     setIsPaymentHistoryOpen(true);
+                                   }}
+                                 >
+                                   <span className="sr-only">View payment history</span>
+                                   <FileText className="h-4 w-4" />
+                                 </Button>
+                               )}
+                             </div>
+                           </TableCell>
+                         </TableRow>
+                       ))
+                     ) : (
+                       <TableRow>
+                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                         </TableCell>
+                       </TableRow>
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+             </TabsContent>
             <TabsContent value="chime" className="m-0">
               <div className="relative w-full overflow-auto">
                 <Table>
@@ -788,6 +870,78 @@ export function WithdrawRequests() {
         onOpenChange={setIsDateRangePickerOpen}
         onApply={handleExport}
       />
+
+      {/* Payment History Dialog */}
+      <Dialog open={isPaymentHistoryOpen} onOpenChange={setIsPaymentHistoryOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Payment History</DialogTitle>
+            <DialogDescription>
+              Complete payment history for this withdrawal request.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedPaymentHistory && (
+            <div className="space-y-4">
+                             <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Player</p>
+                   <p className="font-semibold">{selectedPaymentHistory.playerName}</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
+                   <p className="font-semibold">${selectedPaymentHistory.amount.toLocaleString()}</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Paid Amount</p>
+                   <p className="font-semibold text-green-600">${selectedPaymentHistory.paidAmount?.toLocaleString() || '0'}</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Pending Amount</p>
+                   <p className="font-semibold text-orange-600">${selectedPaymentHistory.pendingAmount?.toLocaleString() || '0'}</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Status</p>
+                   <div className="mt-1">{getStatusBadge(selectedPaymentHistory.status)}</div>
+                 </div>
+               </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-medium">Payment Timeline</h4>
+                <div className="space-y-3">
+                  {selectedPaymentHistory.paymentHistory && selectedPaymentHistory.paymentHistory.length > 0 ? (
+                    selectedPaymentHistory.paymentHistory
+                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                      .map((payment, index) => (
+                        <div key={payment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-medium">${payment.amount.toLocaleString()}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {payment.method} - {payment.tag}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(payment.date), "MMM dd, yyyy 'at' h:mm a")}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium">{payment.staffName}</p>
+                            <p className="text-xs text-muted-foreground">Paid by</p>
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">No payment history available.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -846,6 +1000,30 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
           className="bg-muted"
         />
       </div>
+
+      {/* Payment History Section */}
+      {request.paymentHistory && request.paymentHistory.length > 0 && (
+        <div className="space-y-2">
+          <Label>Payment History</Label>
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {request.paymentHistory
+              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+              .map((payment, index) => (
+                <div key={payment.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
+                  <div>
+                    <span className="font-medium">${payment.amount.toLocaleString()}</span>
+                    <span className="text-muted-foreground ml-2">
+                      {payment.method} - {payment.tag}
+                    </span>
+                  </div>
+                  <span className="text-muted-foreground text-xs">
+                    {format(new Date(payment.date), "MMM dd, h:mm a")}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="playerTag">Player Tag</Label>
