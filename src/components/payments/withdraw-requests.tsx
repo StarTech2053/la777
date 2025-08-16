@@ -14,9 +14,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Download, MoreHorizontal } from 'lucide-react';
+import { Search, Download, MoreHorizontal, Copy, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -28,6 +28,9 @@ import { collection, onSnapshot, query, where, orderBy, doc, updateDoc } from 'f
 import { db } from '@/lib/firebase';
 import type { Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DateRangePickerDialog } from '@/components/ui/date-range-picker-dialog';
+import type { DateRange } from 'react-day-picker';
 
 interface WithdrawRequest {
   id: string;
@@ -35,11 +38,11 @@ interface WithdrawRequest {
   amount: number;
   gameName: string;
   date: string;
-  status: 'pending' | 'completed';
+  status: 'pending' | 'completed' | 'deleted';
   staffName?: string;
   paymentMethod?: string;
   paymentTag?: string;
-  playerTag?: string; // Player's tag for receiving payment
+  playerTag?: string;
   pendingAmount?: number;
   paidAmount?: number;
 }
@@ -50,6 +53,8 @@ export function WithdrawRequests() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<WithdrawRequest | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDateRangePickerOpen, setIsDateRangePickerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,7 +62,6 @@ export function WithdrawRequests() {
       query(
         collection(db, 'transactions'),
         where('type', '==', 'Withdraw')
-        // Temporarily removed orderBy until index is created
       ),
       (querySnapshot) => {
         const requests: WithdrawRequest[] = querySnapshot.docs.map(doc => {
@@ -65,26 +69,23 @@ export function WithdrawRequests() {
           const amount = data.amount || 0;
           const status = data.status || 'pending';
           
-                     return {
-             id: doc.id,
-             playerName: data.playerName || 'Unknown',
-             amount: amount,
-             gameName: data.gameName || 'Unknown',
-             date: data.date,
-             status: status,
-             staffName: data.staffName,
-             paymentMethod: data.paymentMethod || 'N/A',
-             paymentTag: data.paymentTag || 'N/A', // Cashier's payment tag
-             playerTag: data.playerTag || data.playerName || 'N/A', // Player's tag for receiving
-             paidAmount: data.paidAmount || 0,
-             pendingAmount: Math.max(0, amount - (data.paidAmount || 0))
-           };
+          return {
+            id: doc.id,
+            playerName: data.playerName || 'Unknown',
+            amount: amount,
+            gameName: data.gameName || 'Unknown',
+            date: data.date,
+            status: status,
+            staffName: data.staffName,
+            paymentMethod: data.paymentMethod || 'N/A',
+            paymentTag: data.paymentTag || 'N/A',
+            playerTag: data.playerTag || data.playerName || 'N/A',
+            paidAmount: data.paidAmount || 0,
+            pendingAmount: Math.max(0, amount - (data.paidAmount || 0))
+          };
         });
         
-        // Filter out deleted transactions
         const activeRequests = requests.filter(request => request.status !== 'deleted');
-        
-        // Sort manually until index is created
         const sortedRequests = activeRequests.sort((a, b) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
@@ -101,11 +102,24 @@ export function WithdrawRequests() {
     return () => unsubscribe();
   }, []);
 
-  const filteredRequests = withdrawRequests.filter(request =>
-    request.playerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (request.playerTag || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (request.paymentTag || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRequests = withdrawRequests.filter(request => {
+    const matchesSearch = request.playerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (request.playerTag || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (request.paymentTag || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filter by active tab
+    if (activeTab === 'chime') {
+      return matchesSearch && request.paymentMethod === 'Chime';
+    } else if (activeTab === 'cashapp') {
+      return matchesSearch && request.paymentMethod === 'CashApp';
+    } else if (activeTab === 'pending') {
+      return matchesSearch && request.status === 'pending';
+    } else if (activeTab === 'complete') {
+      return matchesSearch && request.status === 'completed';
+    }
+    
+    return matchesSearch;
+  });
 
   const getStatusBadge = (status: string) => {
     if (status === 'completed') {
@@ -115,9 +129,49 @@ export function WithdrawRequests() {
     }
   };
 
-  const handleExport = () => {
-    // Export functionality can be implemented here
-    console.log('Exporting withdraw requests...');
+  const handleExport = (dateRange?: DateRange) => {
+    let requestsToExport = filteredRequests;
+
+    if (dateRange?.from && dateRange?.to) {
+      requestsToExport = filteredRequests.filter(request => {
+        const requestDate = new Date(request.date);
+        return requestDate >= dateRange.from! && requestDate <= dateRange.to!;
+      });
+    }
+
+    const headers = ['Date', 'Time', 'Staff', 'Player Tag', 'Method', 'Amount', 'Tag', 'Pending Amount', 'Paid Amount', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...requestsToExport.map(request => [
+        format(new Date(request.date), "MM/dd/yyyy"),
+        format(new Date(request.date), "h:mm a"),
+        request.staffName || 'N/A',
+        request.playerTag || 'N/A',
+        request.paymentMethod || 'N/A',
+        request.amount.toLocaleString(),
+        request.paymentTag || 'N/A',
+        request.pendingAmount?.toLocaleString() || '0',
+        request.paidAmount?.toLocaleString() || '0',
+        request.status
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `withdraw-requests-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Successful",
+      description: `Exported ${requestsToExport.length} withdraw requests to CSV.`,
+    });
+    
+    setIsDateRangePickerOpen(false);
   };
 
   const handleDeleteTransaction = async (transactionId: string) => {
@@ -157,16 +211,10 @@ export function WithdrawRequests() {
 
     try {
       const transactionRef = doc(db, 'transactions', selectedRequest.id);
-      // Add to existing paid amount instead of replacing
       const currentPaidAmount = selectedRequest.paidAmount || 0;
       const additionalPaidAmount = formData.paidAmount;
       const totalPaidAmount = currentPaidAmount + additionalPaidAmount;
       const newPendingAmount = Math.max(0, selectedRequest.amount - totalPaidAmount);
-      
-      console.log('Current paid amount:', currentPaidAmount);
-      console.log('Additional paid amount:', additionalPaidAmount);
-      console.log('Total paid amount:', totalPaidAmount);
-      console.log('New pending amount:', newPendingAmount);
       
       await updateDoc(transactionRef, {
         paymentMethod: formData.paymentMethod,
@@ -221,6 +269,24 @@ export function WithdrawRequests() {
     }
   };
 
+  const handleCopyPlayerTag = async (playerTag: string) => {
+    try {
+      await navigator.clipboard.writeText(playerTag);
+      toast({
+        variant: "success",
+        title: "Copied!",
+        description: "Player tag copied to clipboard.",
+      });
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to copy player tag. Please try again.",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -235,6 +301,496 @@ export function WithdrawRequests() {
       </Card>
     );
   }
+
+  return (
+    <>
+      {isLoading && <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>}
+      {!isLoading && (
+        <Card className="flex flex-col h-full">
+                     <CardHeader className="flex flex-col gap-4">
+             <CardTitle className="text-base font-semibold">Withdraw Requests</CardTitle>
+           </CardHeader>
+          <CardContent className="p-0 flex-grow flex flex-col">
+                         <div className="border-t flex-grow">
+               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                 <div className="flex items-center justify-between border-b px-4 py-2">
+                   <div className="flex items-center gap-2">
+                     <div className="relative flex-grow min-w-[300px]">
+                       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                       <Input 
+                         id="search-transactions"
+                         name="search-transactions"
+                         placeholder="Search transactions..." 
+                         className="pl-8"
+                         value={searchTerm}
+                         onChange={(e) => setSearchTerm(e.target.value)}
+                       />
+                     </div>
+                     <Button variant="outline" onClick={() => setIsDateRangePickerOpen(true)} disabled={filteredRequests.length === 0}>
+                       <FileText className="mr-2 h-4 w-4" /> Report
+                     </Button>
+                   </div>
+                                       <TabsList className="grid w-full max-w-sm grid-cols-5">
+                      <TabsTrigger value="overview">Overview</TabsTrigger>
+                      <TabsTrigger value="chime">Chime</TabsTrigger>
+                      <TabsTrigger value="cashapp">CashApp</TabsTrigger>
+                      <TabsTrigger value="pending">Pending</TabsTrigger>
+                      <TabsTrigger value="complete">Complete</TabsTrigger>
+                    </TabsList>
+                 </div>
+                <TabsContent value="overview" className="m-0">
+                  <div className="relative w-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Staff</TableHead>
+                      <TableHead>Player Tag</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Tag</TableHead>
+                      <TableHead>Pending Amount</TableHead>
+                      <TableHead>Paid Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRequests.length > 0 ? (
+                      filteredRequests.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">
+                            {format(new Date(request.date), "MM/dd/yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(request.date), "h:mm a")}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {request.staffName || 'N/A'}
+                          </TableCell>
+                          <TableCell className="font-medium text-blue-600">
+                            <div className="flex items-center gap-2">
+                              <span>{request.playerTag}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-blue-100"
+                                onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                              >
+                                <Copy className="h-3 w-3 text-blue-600" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>{request.paymentMethod}</TableCell>
+                          <TableCell className="text-destructive font-semibold">
+                            -${request.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-green-600 font-medium">
+                            {request.paymentTag}
+                          </TableCell>
+                          <TableCell className="text-orange-600 font-semibold">
+                            ${request.pendingAmount?.toLocaleString() || '0'}
+                          </TableCell>
+                          <TableCell className="text-green-600 font-semibold">
+                            ${request.paidAmount?.toLocaleString() || '0'}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(request.status)}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleProcessTransaction(request)}
+                            >
+                              <span className="sr-only">Open transaction form</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                          {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+            <TabsContent value="chime" className="m-0">
+              <div className="relative w-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Staff</TableHead>
+                      <TableHead>Player Tag</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Tag</TableHead>
+                      <TableHead>Pending Amount</TableHead>
+                      <TableHead>Paid Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRequests.length > 0 ? (
+                      filteredRequests.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">
+                            {format(new Date(request.date), "MM/dd/yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(request.date), "h:mm a")}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {request.staffName || 'N/A'}
+                          </TableCell>
+                          <TableCell className="font-medium text-blue-600">
+                            <div className="flex items-center gap-2">
+                              <span>{request.playerTag}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-blue-100"
+                                onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                              >
+                                <Copy className="h-3 w-3 text-blue-600" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>{request.paymentMethod}</TableCell>
+                          <TableCell className="text-destructive font-semibold">
+                            -${request.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-green-600 font-medium">
+                            {request.paymentTag}
+                          </TableCell>
+                          <TableCell className="text-orange-600 font-semibold">
+                            ${request.pendingAmount?.toLocaleString() || '0'}
+                          </TableCell>
+                          <TableCell className="text-green-600 font-semibold">
+                            ${request.paidAmount?.toLocaleString() || '0'}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(request.status)}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleProcessTransaction(request)}
+                            >
+                              <span className="sr-only">Open transaction form</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                          {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+            <TabsContent value="cashapp" className="m-0">
+              <div className="relative w-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Staff</TableHead>
+                      <TableHead>Player Tag</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Tag</TableHead>
+                      <TableHead>Pending Amount</TableHead>
+                      <TableHead>Paid Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRequests.length > 0 ? (
+                      filteredRequests.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">
+                            {format(new Date(request.date), "MM/dd/yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(request.date), "h:mm a")}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {request.staffName || 'N/A'}
+                          </TableCell>
+                          <TableCell className="font-medium text-blue-600">
+                            <div className="flex items-center gap-2">
+                              <span>{request.playerTag}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-blue-100"
+                                onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                              >
+                                <Copy className="h-3 w-3 text-blue-600" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>{request.paymentMethod}</TableCell>
+                          <TableCell className="text-destructive font-semibold">
+                            -${request.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-green-600 font-medium">
+                            {request.paymentTag}
+                          </TableCell>
+                          <TableCell className="text-orange-600 font-semibold">
+                            ${request.pendingAmount?.toLocaleString() || '0'}
+                          </TableCell>
+                          <TableCell className="text-green-600 font-semibold">
+                            ${request.paidAmount?.toLocaleString() || '0'}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(request.status)}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleProcessTransaction(request)}
+                            >
+                              <span className="sr-only">Open transaction form</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                          {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+                         </TabsContent>
+             <TabsContent value="pending" className="m-0">
+               <div className="relative w-full overflow-auto">
+                 <Table>
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead>Date</TableHead>
+                       <TableHead>Time</TableHead>
+                       <TableHead>Staff</TableHead>
+                       <TableHead>Player Tag</TableHead>
+                       <TableHead>Method</TableHead>
+                       <TableHead>Amount</TableHead>
+                       <TableHead>Tag</TableHead>
+                       <TableHead>Pending Amount</TableHead>
+                       <TableHead>Paid Amount</TableHead>
+                       <TableHead>Status</TableHead>
+                       <TableHead>Action</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {filteredRequests.length > 0 ? (
+                       filteredRequests.map((request) => (
+                         <TableRow key={request.id}>
+                           <TableCell className="font-medium">
+                             {format(new Date(request.date), "MM/dd/yyyy")}
+                           </TableCell>
+                           <TableCell>
+                             {format(new Date(request.date), "h:mm a")}
+                           </TableCell>
+                           <TableCell className="text-muted-foreground">
+                             {request.staffName || 'N/A'}
+                           </TableCell>
+                           <TableCell className="font-medium text-blue-600">
+                             <div className="flex items-center gap-2">
+                               <span>{request.playerTag}</span>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="h-6 w-6 p-0 hover:bg-blue-100"
+                                 onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                               >
+                                 <Copy className="h-3 w-3 text-blue-600" />
+                               </Button>
+                             </div>
+                           </TableCell>
+                           <TableCell>{request.paymentMethod}</TableCell>
+                           <TableCell className="text-destructive font-semibold">
+                             -${request.amount.toLocaleString()}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-medium">
+                             {request.paymentTag}
+                           </TableCell>
+                           <TableCell className="text-orange-600 font-semibold">
+                             ${request.pendingAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-semibold">
+                             ${request.paidAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell>
+                             {getStatusBadge(request.status)}
+                           </TableCell>
+                           <TableCell>
+                             <Button 
+                               variant="ghost" 
+                               className="h-8 w-8 p-0"
+                               onClick={() => handleProcessTransaction(request)}
+                             >
+                               <span className="sr-only">Open transaction form</span>
+                               <MoreHorizontal className="h-4 w-4" />
+                             </Button>
+                           </TableCell>
+                         </TableRow>
+                       ))
+                     ) : (
+                       <TableRow>
+                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                         </TableCell>
+                       </TableRow>
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+             </TabsContent>
+             <TabsContent value="complete" className="m-0">
+               <div className="relative w-full overflow-auto">
+                 <Table>
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead>Date</TableHead>
+                       <TableHead>Time</TableHead>
+                       <TableHead>Staff</TableHead>
+                       <TableHead>Player Tag</TableHead>
+                       <TableHead>Method</TableHead>
+                       <TableHead>Amount</TableHead>
+                       <TableHead>Tag</TableHead>
+                       <TableHead>Pending Amount</TableHead>
+                       <TableHead>Paid Amount</TableHead>
+                       <TableHead>Status</TableHead>
+                       <TableHead>Action</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {filteredRequests.length > 0 ? (
+                       filteredRequests.map((request) => (
+                         <TableRow key={request.id}>
+                           <TableCell className="font-medium">
+                             {format(new Date(request.date), "MM/dd/yyyy")}
+                           </TableCell>
+                           <TableCell>
+                             {format(new Date(request.date), "h:mm a")}
+                           </TableCell>
+                           <TableCell className="text-muted-foreground">
+                             {request.staffName || 'N/A'}
+                           </TableCell>
+                           <TableCell className="font-medium text-blue-600">
+                             <div className="flex items-center gap-2">
+                               <span>{request.playerTag}</span>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="h-6 w-6 p-0 hover:bg-blue-100"
+                                 onClick={() => handleCopyPlayerTag(request.playerTag || '')}
+                               >
+                                 <Copy className="h-3 w-3 text-blue-600" />
+                               </Button>
+                             </div>
+                           </TableCell>
+                           <TableCell>{request.paymentMethod}</TableCell>
+                           <TableCell className="text-destructive font-semibold">
+                             -${request.amount.toLocaleString()}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-medium">
+                             {request.paymentTag}
+                           </TableCell>
+                           <TableCell className="text-orange-600 font-semibold">
+                             ${request.pendingAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell className="text-green-600 font-semibold">
+                             ${request.paidAmount?.toLocaleString() || '0'}
+                           </TableCell>
+                           <TableCell>
+                             {getStatusBadge(request.status)}
+                           </TableCell>
+                           <TableCell>
+                             <Button 
+                               variant="ghost" 
+                               className="h-8 w-8 p-0"
+                               onClick={() => handleProcessTransaction(request)}
+                             >
+                               <span className="sr-only">Open transaction form</span>
+                               <MoreHorizontal className="h-4 w-4" />
+                             </Button>
+                           </TableCell>
+                         </TableRow>
+                       ))
+                     ) : (
+                       <TableRow>
+                         <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                           {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
+                         </TableCell>
+                       </TableRow>
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+             </TabsContent>
+           </Tabs>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Transaction Processing Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Process Withdrawal Transaction</DialogTitle>
+            <DialogDescription>
+              Update payment details and process the withdrawal transaction.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest && (
+            <TransactionForm
+              request={selectedRequest}
+              onSubmit={handleFormSubmit}
+              onCancel={() => {
+                setIsDialogOpen(false);
+                setSelectedRequest(null);
+              }}
+              onDelete={handleDeleteFromForm}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Date Range Picker Dialog */}
+      <DateRangePickerDialog
+        isOpen={isDateRangePickerOpen}
+        onOpenChange={setIsDateRangePickerOpen}
+        onApply={handleExport}
+      />
+    </>
+  );
+}
 
 interface TransactionFormProps {
   request: WithdrawRequest;
@@ -253,7 +809,6 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
   const [paymentTag, setPaymentTag] = useState('');
   const [paidAmount, setPaidAmount] = useState('0');
   
-  // Calculate pending amount automatically (considering already paid amount)
   const currentPaidAmount = request.paidAmount || 0;
   const additionalPaidAmount = parseFloat(paidAmount) || 0;
   const totalPaidAmount = currentPaidAmount + additionalPaidAmount;
@@ -265,13 +820,11 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
     const currentPaidAmount = request.paidAmount || 0;
     const totalPaidAmount = currentPaidAmount + additionalPaidAmount;
     
-    // Validation: Total paid amount cannot exceed total amount
     if (totalPaidAmount > request.amount) {
       alert('Total paid amount cannot exceed total amount!');
       return;
     }
     
-    // Auto-determine status based on pending amount
     const autoStatus = pendingAmount === 0 ? 'completed' : 'pending';
     
     onSubmit({
@@ -294,69 +847,68 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
         />
       </div>
 
-             <div className="space-y-2">
-         <Label htmlFor="playerTag">Player Tag</Label>
-         <div className="flex items-center space-x-2">
-           <Input
-             id="playerTag"
-             value={request.playerTag || ''}
-             disabled
-             className="bg-muted flex-1"
-           />
-           <Button
-             type="button"
-             variant="outline"
-             size="sm"
-             onClick={() => {
-               navigator.clipboard.writeText(request.playerTag || '');
-               // You can add a toast notification here if needed
-             }}
-             className="shrink-0"
-           >
-             Copy
-           </Button>
-         </div>
-       </div>
+      <div className="space-y-2">
+        <Label htmlFor="playerTag">Player Tag</Label>
+        <div className="flex items-center space-x-2">
+          <Input
+            id="playerTag"
+            value={request.playerTag || ''}
+            disabled
+            className="bg-muted flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(request.playerTag || '');
+            }}
+            className="shrink-0"
+          >
+            Copy
+          </Button>
+        </div>
+      </div>
 
-             <div className="space-y-2">
-         <Label htmlFor="amount">Amount</Label>
-         <Input
-           id="amount"
-           value={`$${request.amount.toLocaleString()}`}
-           disabled
-           className="bg-muted"
-         />
-       </div>
+      <div className="space-y-2">
+        <Label htmlFor="amount">Amount</Label>
+        <Input
+          id="amount"
+          value={`$${request.amount.toLocaleString()}`}
+          disabled
+          className="bg-muted"
+        />
+      </div>
 
-                               <div className="space-y-2">
-           <Label htmlFor="paidAmount">Additional Amount to Pay</Label>
-                       <Input
-              id="paidAmount"
-              type="number"
-              value={paidAmount}
-              onChange={(e) => setPaidAmount(e.target.value)}
-              placeholder="Enter additional amount to pay"
-              className={`font-semibold ${totalPaidAmount > request.amount ? 'border-red-500' : ''}`}
-            />
-            <p className="text-sm text-muted-foreground">
-              Already paid: ${request.paidAmount?.toLocaleString() || '0'}
-            </p>
-            {totalPaidAmount > request.amount && (
-              <p className="text-sm text-red-500">Total amount cannot exceed ${request.amount.toLocaleString()}</p>
-            )}
-         </div>
+      <div className="space-y-2">
+        <Label htmlFor="paidAmount">Additional Amount to Pay</Label>
+        <Input
+          id="paidAmount"
+          type="number"
+          value={paidAmount}
+          onChange={(e) => setPaidAmount(e.target.value)}
+          placeholder="Enter additional amount to pay"
+          className={`font-semibold ${totalPaidAmount > request.amount ? 'border-red-500' : ''}`}
+        />
+        <p className="text-sm text-muted-foreground">
+          Already paid: ${request.paidAmount?.toLocaleString() || '0'}
+        </p>
+        {totalPaidAmount > request.amount && (
+          <p className="text-sm text-red-500">Total amount cannot exceed ${request.amount.toLocaleString()}</p>
+        )}
+      </div>
 
-                          <div className="space-y-2">
-           <Label htmlFor="pendingAmount">Pending Amount</Label>
-           <Input
-             id="pendingAmount"
-             value={`$${pendingAmount.toLocaleString()}`}
-             disabled
-             className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
-           />
-         </div>
+      <div className="space-y-2">
+        <Label htmlFor="pendingAmount">Pending Amount</Label>
+        <Input
+          id="pendingAmount"
+          value={`$${pendingAmount.toLocaleString()}`}
+          disabled
+          className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
+        />
+      </div>
 
-       <div className="space-y-2">
+      <div className="space-y-2">
         <Label htmlFor="paymentMethod">Payment Method</Label>
         <Select value={paymentMethod} onValueChange={setPaymentMethod}>
           <SelectTrigger id="paymentMethod">
@@ -379,154 +931,29 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
         />
       </div>
 
-             <div className="space-y-2">
-         <Label htmlFor="status">Status</Label>
-         <Input
-           id="status"
-           value={pendingAmount === 0 ? 'Completed' : 'Pending'}
-           disabled
-           className="bg-muted font-semibold"
-         />
-       </div>
+      <div className="space-y-2">
+        <Label htmlFor="status">Status</Label>
+        <Input
+          id="status"
+          value={pendingAmount === 0 ? 'Completed' : 'Pending'}
+          disabled
+          className="bg-muted font-semibold"
+        />
+      </div>
 
-             <div className="flex justify-between pt-4">
-         <Button type="button" variant="destructive" onClick={onDelete}>
-           Delete Transaction
-         </Button>
-         <div className="flex space-x-2">
-           <Button type="button" variant="outline" onClick={onCancel}>
-             Cancel
-           </Button>
-           <Button type="submit">
-             Process Transaction
-           </Button>
-         </div>
-       </div>
-    </form>
-  );
-}
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Withdraw Requests</CardTitle>
-          <Button onClick={handleExport} variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
+      <div className="flex justify-between pt-4">
+        <Button type="button" variant="destructive" onClick={onDelete}>
+          Delete Transaction
+        </Button>
+        <div className="flex space-x-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit">
+            Process Transaction
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search by player name, player tag, or payment tag..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Staff</TableHead>
-                  <TableHead>Player Tag</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Tag</TableHead>
-                  <TableHead>Pending Amount</TableHead>
-                  <TableHead>Paid Amount</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRequests.length > 0 ? (
-                  filteredRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">
-                        {format(new Date(request.date), "MM/dd/yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(request.date), "h:mm a")}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {request.staffName || 'N/A'}
-                      </TableCell>
-                      <TableCell className="font-medium text-blue-600">
-                        {request.playerTag}
-                      </TableCell>
-                      <TableCell>{request.paymentMethod}</TableCell>
-                      <TableCell className="text-destructive font-semibold">
-                        -${request.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-green-600 font-medium">
-                        {request.paymentTag}
-                      </TableCell>
-                      <TableCell className="text-orange-600 font-semibold">
-                        ${request.pendingAmount?.toLocaleString() || '0'}
-                      </TableCell>
-                                             <TableCell className="text-green-600 font-semibold">
-                         ${request.paidAmount?.toLocaleString() || '0'}
-                       </TableCell>
-                       <TableCell>{request.paymentMethod}</TableCell>
-                       <TableCell>
-                         {getStatusBadge(request.status)}
-                       </TableCell>
-                                             <TableCell>
-                         <Button 
-                           variant="ghost" 
-                           className="h-8 w-8 p-0"
-                           onClick={() => handleProcessTransaction(request)}
-                         >
-                           <span className="sr-only">Open transaction form</span>
-                           <MoreHorizontal className="h-4 w-4" />
-                         </Button>
-                       </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                                     <TableRow>
-                     <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
-                       {searchTerm ? 'No withdraw requests found matching your search.' : 'No withdraw requests yet.'}
-                     </TableCell>
-                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      </CardContent>
-
-             {/* Transaction Processing Dialog */}
-       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-         <DialogContent className="sm:max-w-[500px]">
-           <DialogHeader>
-             <DialogTitle>Process Withdrawal Transaction</DialogTitle>
-             <DialogDescription>
-               Update payment details and process the withdrawal transaction.
-             </DialogDescription>
-           </DialogHeader>
-           {selectedRequest && (
-                          <TransactionForm
-                request={selectedRequest}
-                onSubmit={handleFormSubmit}
-                onCancel={() => {
-                  setIsDialogOpen(false);
-                  setSelectedRequest(null);
-                }}
-                onDelete={handleDeleteFromForm}
-              />
-           )}
-         </DialogContent>
-       </Dialog>
-    </Card>
+      </div>
+    </form>
   );
 }

@@ -40,6 +40,15 @@ const nextConfig: NextConfig = {
       };
     }
     
+    // Suppress React DevTools warning in development
+    if (dev) {
+      config.plugins.push(
+        new (require('webpack')).DefinePlugin({
+          __REACT_DEVTOOLS_GLOBAL_HOOK__: '({ isDisabled: true })',
+        })
+      );
+    }
+    
     // Development optimizations
     if (dev) {
       // Faster development builds
