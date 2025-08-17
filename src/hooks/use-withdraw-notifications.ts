@@ -13,12 +13,6 @@ export function useWithdrawNotifications() {
   });
 
   useEffect(() => {
-    // Check for existing notification on mount
-    const storedNotification = localStorage.getItem('withdrawNotification');
-    if (storedNotification === 'true') {
-      setHasNewRequests(true);
-    }
-
     // Listen for withdraw requests
     const unsubscribe = onSnapshot(
       query(
@@ -45,8 +39,22 @@ export function useWithdrawNotifications() {
         });
 
         if (newRequests.length > 0) {
+          // New requests found, show notification
           setHasNewRequests(true);
           localStorage.setItem('withdrawNotification', 'true');
+        } else {
+          // No new requests, but check if there are existing pending requests
+          // that should show notification (for users who just logged in)
+          const storedNotification = localStorage.getItem('withdrawNotification');
+          if (storedNotification === 'true') {
+            setHasNewRequests(true);
+          } else {
+            // If no stored notification but there are pending requests,
+            // this means user just logged in and there are existing pending requests
+            // We should show notification for these existing requests
+            setHasNewRequests(true);
+            localStorage.setItem('withdrawNotification', 'true');
+          }
         }
       },
       (error) => {

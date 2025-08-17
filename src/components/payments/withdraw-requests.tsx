@@ -1175,18 +1175,18 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
          </div>
        )}
 
-       {/* First Row - Player Info */}
-       <div className="grid grid-cols-2 gap-4">
-         <div className="space-y-2">
-           <Label htmlFor="playerName">Player Name</Label>
-           <Input
-             id="playerName"
-             name="playerName"
-             value={request.playerName}
-             disabled
-             className="bg-muted"
-           />
-         </div>
+               {/* First Row - Player Info */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="playerName">Game Account</Label>
+            <Input
+              id="playerName"
+              name="playerName"
+              value={request.gameName}
+              disabled
+              className="bg-muted"
+            />
+          </div>
          <div className="space-y-2">
            <Label htmlFor="playerTag">Player Tag</Label>
            <div className="flex items-center space-x-2">
@@ -1212,18 +1212,18 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
          </div>
        </div>
 
-       {/* Second Row - Amount Info */}
-       <div className="grid grid-cols-3 gap-4">
-         <div className="space-y-2">
-           <Label htmlFor="amount">Total Amount</Label>
-           <Input
-             id="amount"
-             name="amount"
-             value={`$${request.amount.toLocaleString()}`}
-             disabled
-             className="bg-muted"
-           />
-         </div>
+               {/* Second Row - Amount Info */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="amount">Withdrawal</Label>
+            <Input
+              id="amount"
+              name="amount"
+              value={`$${request.amount.toLocaleString()}`}
+              disabled
+              className="bg-muted"
+            />
+          </div>
                    <div className="space-y-2">
             <Label htmlFor="paidAmount">Additional Amount</Label>
                          <Input
@@ -1233,8 +1233,7 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
                value={paidAmount}
                onChange={handleAmountChange}
                placeholder="Enter amount"
-               disabled={pendingAmount === 0}
-               className={`font-semibold ${pendingAmount === 0 ? 'bg-muted cursor-not-allowed' : ''}`}
+               className="font-semibold"
              />
              {pendingAmount > 0 && (
                <p className="text-xs text-muted-foreground">
@@ -1258,8 +1257,8 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">Payment Method</Label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={pendingAmount === 0}>
-              <SelectTrigger id="paymentMethod" name="paymentMethod" className={pendingAmount === 0 ? 'bg-muted cursor-not-allowed' : ''}>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger id="paymentMethod" name="paymentMethod">
                 <SelectValue placeholder="Select method" />
               </SelectTrigger>
               <SelectContent>
@@ -1276,8 +1275,6 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
               value={paymentTag}
               onChange={(e) => setPaymentTag(e.target.value)}
               placeholder="Enter payment tag"
-              disabled={pendingAmount === 0}
-              className={pendingAmount === 0 ? 'bg-muted cursor-not-allowed' : ''}
             />
           </div>
                     <div className="space-y-2">
@@ -1285,9 +1282,9 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
              <Input
                id="status"
                name="status"
-               value={pendingAmount === 0 ? 'Completed' : 'Pending'}
+               value="Pending"
                disabled
-               className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
+               className="bg-muted font-semibold text-orange-600"
              />
            </div>
         </div>
