@@ -62,7 +62,6 @@
     "dotenv": "^17.2.1",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^10.12.2",
-    "firebase-admin": "^11.11.1",
     "fs": "^0.0.1-security",
     "genkit": "^1.13.0",
     "lucide-react": "^0.475.0",

@@ -72,11 +72,15 @@ export async function addStaff(data: z.infer<typeof addStaffSchema>) {
     await initializeAdminApp();
     const db = getAdminDb();
     
+    console.log("🔧 Adding staff member:", { email: data.email, name: data.name, role: data.role });
+    
     const userRecord = await createUser(
         data.email,
         data.password,
         data.name
     );
+    
+    console.log("✅ User created, now adding to Firestore:", userRecord.uid);
     
     const staffDocRef = db.collection("staff").doc(userRecord.uid);
     await staffDocRef.set({
@@ -89,9 +93,25 @@ export async function addStaff(data: z.infer<typeof addStaffSchema>) {
         createdDate: new Date().toISOString(),
     });
 
-    return { 
-      success: true,
-    };
+    console.log("✅ Staff document added to Firestore");
+
+    // Test the login to verify everything works
+    const { testUserLogin } = await import('@/lib/firebase-admin');
+    const testResult = await testUserLogin(data.email, data.password);
+    
+    if (testResult.success) {
+      console.log("✅ Staff member can login successfully");
+      return { 
+        success: true,
+        message: "Staff member added successfully and can login."
+      };
+    } else {
+      console.warn("⚠️ Staff member created but login test failed:", testResult.error);
+      return { 
+        success: true,
+        message: "Staff member added but login test failed. Please try logging in manually."
+      };
+    }
 
   } catch (e: any) {
     console.error("Error adding staff:", e);

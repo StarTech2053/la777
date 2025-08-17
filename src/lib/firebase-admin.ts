@@ -1,4 +1,4 @@
-// Firebase REST API approach to avoid Next.js compatibility issues
+// Firebase REST API approach (simplified)
 import { db } from './firebase';
 import { doc, setDoc, collection, getDocs, limit, query } from 'firebase/firestore';
 
@@ -11,53 +11,71 @@ const initializeAdminApp = async (): Promise<void> => {
   return Promise.resolve();
 };
 
-// Create user using Firebase client SDK (more reliable)
+// Create user using Firebase REST API
 const createUser = async (email: string, password: string, displayName: string) => {
   try {
     console.log("🔧 Creating user with:", { email, displayName, passwordLength: password.length });
     
-    // Use Firebase client SDK for user creation
-    const { createUserWithEmailAndPassword, updateProfile, signOut } = await import('firebase/auth');
-    const { auth } = await import('./firebase');
+    // Use Firebase REST API to create user
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        returnSecureToken: true
+      })
+    });
+
+    const data = await response.json();
     
-    // Create user account
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    console.log("✅ User created successfully:", userCredential.user.uid);
+    if (!response.ok) {
+      console.error("❌ Firebase API error:", data);
+      if (data.error?.message === 'EMAIL_EXISTS') {
+        throw new Error('This email address is already in use.');
+      } else if (data.error?.message === 'WEAK_PASSWORD') {
+        throw new Error('Password should be at least 6 characters.');
+      } else if (data.error?.message === 'INVALID_EMAIL') {
+        throw new Error('Invalid email address.');
+      } else {
+        throw new Error(data.error?.message || 'Failed to create user.');
+      }
+    }
+
+    console.log("✅ User created successfully:", data.localId);
+    console.log("✅ User data:", { uid: data.localId, email: data.email, idToken: data.idToken ? 'Present' : 'Missing' });
     
-    // Update display name
-    if (displayName && userCredential.user) {
-      await updateProfile(userCredential.user, {
-        displayName: displayName
+    // Update display name using REST API
+    if (displayName && data.idToken) {
+      const updateResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FIREBASE_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idToken: data.idToken,
+          displayName: displayName,
+          returnSecureToken: false
+        })
       });
-      console.log("✅ Display name updated");
+
+      if (updateResponse.ok) {
+        console.log("✅ Display name updated");
+      } else {
+        console.warn("⚠️ Failed to update display name");
+      }
     }
     
-    // Sign out the newly created user so they can sign in manually
-    await signOut(auth);
-    console.log("🔓 User signed out after creation");
-    
     return {
-      uid: userCredential.user.uid,
-      email: userCredential.user.email || email,
+      uid: data.localId,
+      email: data.email || email,
       displayName: displayName
     };
   } catch (error: any) {
     console.error("❌ Error creating user:", error);
-    console.error("Error code:", error.code);
-    console.error("Error message:", error.message);
-    
-    // Handle specific Firebase errors
-    if (error.code === 'auth/email-already-in-use') {
-      throw new Error('This email address is already in use.');
-    } else if (error.code === 'auth/weak-password') {
-      throw new Error('Password should be at least 6 characters.');
-    } else if (error.code === 'auth/invalid-email') {
-      throw new Error('Invalid email address.');
-    } else if (error.code === 'auth/configuration-not-found') {
-      throw new Error('Firebase Authentication is not enabled. Please enable Email/Password authentication in Firebase Console.');
-    } else {
-      throw new Error(error.message || 'Failed to create user. Please check Firebase Authentication setup.');
-    }
+    throw error;
   }
 };
 
@@ -90,7 +108,39 @@ const getAdminDb = () => {
   };
 };
 
+// Test function to verify user creation
+const testUserLogin = async (email: string, password: string) => {
+  try {
+    console.log("🧪 Testing user login for:", email);
+    
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        returnSecureToken: true
+      })
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      console.log("✅ Test login successful:", data.localId);
+      return { success: true, uid: data.localId };
+    } else {
+      console.error("❌ Test login failed:", data.error?.message);
+      return { success: false, error: data.error?.message };
+    }
+  } catch (error: any) {
+    console.error("❌ Test login error:", error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Legacy exports for compatibility
 const adminDb = getAdminDb();
 
-export { initializeAdminApp, adminDb, getAdminDb, createUser };
+export { initializeAdminApp, adminDb, getAdminDb, createUser, testUserLogin };

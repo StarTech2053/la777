@@ -19,7 +19,7 @@ export function useWithdrawNotifications() {
       setHasNewRequests(true);
     }
 
-    // Listen for new withdraw requests
+    // Listen for withdraw requests
     const unsubscribe = onSnapshot(
       query(
         collection(db, 'transactions'),
@@ -27,7 +27,18 @@ export function useWithdrawNotifications() {
         where('status', '==', 'pending')
       ),
       (querySnapshot) => {
-        const newRequests = querySnapshot.docs.filter(doc => {
+        // Check if there are any pending requests
+        const pendingRequests = querySnapshot.docs;
+        
+        if (pendingRequests.length === 0) {
+          // No pending requests, clear notification
+          setHasNewRequests(false);
+          localStorage.removeItem('withdrawNotification');
+          return;
+        }
+
+        // Check for new requests (created after lastCheckedTime)
+        const newRequests = pendingRequests.filter(doc => {
           const data = doc.data();
           const requestTime = new Date(data.date);
           return requestTime > lastCheckedTime;
