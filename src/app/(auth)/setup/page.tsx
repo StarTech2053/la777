@@ -84,12 +84,12 @@ export default function SetupAdminPage() {
         <CardContent className="space-y-4">
            <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
-            <Input id="name" placeholder="John Doe" {...register("name")} />
+            <Input id="name" name="name" placeholder="John Doe" {...register("name")} />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="admin@example.com" {...register("email")} />
+            <Input id="email" name="email" type="email" placeholder="admin@example.com" {...register("email")} />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
           <div className="space-y-2">
@@ -97,6 +97,7 @@ export default function SetupAdminPage() {
             <div className="relative">
                 <Input
                 id="password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 {...register("password")}
                 />

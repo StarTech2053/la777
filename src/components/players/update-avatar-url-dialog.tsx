@@ -226,6 +226,7 @@ export function UpdateAvatarUrlDialog({
               <Label htmlFor="avatarUrl">Image URL</Label>
               <Input
                 id="avatarUrl"
+                name="avatarUrl"
                 {...register("avatarUrl")}
                 placeholder="https://example.com/image.png or data:image/png;base64,..."
                 disabled={isValidating}

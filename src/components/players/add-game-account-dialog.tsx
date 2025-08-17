@@ -154,6 +154,7 @@ export function AddGameAccountDialog({
               <Label htmlFor="gamerId">Gamer ID</Label>
               <Input
                 id="gamerId"
+                name="gamerId"
                 {...register("gamerId")}
                 placeholder="e.g., PlayerOne123"
               />

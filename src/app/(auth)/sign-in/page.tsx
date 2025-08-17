@@ -173,7 +173,7 @@ export default function SignInPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" {...register("email")} />
+                <Input id="email" name="email" type="email" placeholder="m@example.com" {...register("email")} />
                 {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
@@ -183,6 +183,7 @@ export default function SignInPage() {
                 <div className="relative">
                     <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     {...register("password")}
                     />

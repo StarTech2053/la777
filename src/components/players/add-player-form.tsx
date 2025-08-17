@@ -163,12 +163,12 @@ export function AddPlayerForm() {
               />
           </div>
            <div className="space-y-2">
-            <Label>Player ID</Label>
-            <Input readOnly disabled value="(auto-generated)" />
+            <Label htmlFor="playerId">Player ID</Label>
+            <Input id="playerId" name="playerId" readOnly disabled value="(auto-generated)" />
           </div>
            <div className="space-y-2">
-            <Label>Join Date</Label>
-            <Input readOnly disabled value="(auto-generated)" />
+            <Label htmlFor="joinDate">Join Date</Label>
+            <Input id="joinDate" name="joinDate" readOnly disabled value="(auto-generated)" />
           </div>
           <div className="flex justify-end pt-4">
              <Button type="submit" disabled={isSubmitting}>

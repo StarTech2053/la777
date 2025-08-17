@@ -107,12 +107,12 @@ export function EditTransactionDialog({
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1">
             <div className="space-y-2">
-                <Label>Player Name</Label>
-                <Input value={transaction?.playerName || ''} disabled />
+                <Label htmlFor="playerName">Player Name</Label>
+                <Input id="playerName" name="playerName" value={transaction?.playerName || ''} disabled />
             </div>
              <div className="space-y-2">
-                <Label>Date</Label>
-                <Input value={transaction ? format(new Date(transaction.date), 'Pp') : ''} disabled />
+                <Label htmlFor="transactionDate">Date</Label>
+                <Input id="transactionDate" name="transactionDate" value={transaction ? format(new Date(transaction.date), 'Pp') : ''} disabled />
             </div>
             <div className="space-y-2">
               <Label htmlFor="type">Type</Label>
