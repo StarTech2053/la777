@@ -1175,42 +1175,39 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
          </div>
        )}
 
-               {/* First Row - Player Info */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="playerName">Game Account</Label>
-            <Input
-              id="playerName"
-              name="playerName"
-              value={request.gameName}
-              disabled
-              className="bg-muted"
-            />
-          </div>
-         <div className="space-y-2">
-           <Label htmlFor="playerTag">Player Tag</Label>
-           <div className="flex items-center space-x-2">
+                               {/* First Row - Player Info */}
+         <div className="grid grid-cols-3 gap-4">
+           <div className="space-y-2">
+             <Label htmlFor="playerName">Game Account</Label>
+             <Input
+               id="playerName"
+               name="playerName"
+               value={request.gameName}
+               disabled
+               className="bg-muted"
+             />
+           </div>
+           <div className="space-y-2">
+             <Label htmlFor="playerTag">Player Tag</Label>
              <Input
                id="playerTag"
                name="playerTag"
                value={request.playerTag || ''}
                disabled
-               className="bg-muted flex-1"
+               className="bg-muted"
              />
-             <Button
-               type="button"
-               variant="outline"
-               size="sm"
-               onClick={() => {
-                 navigator.clipboard.writeText(request.playerTag || '');
-               }}
-               className="shrink-0"
-             >
-               Copy
-             </Button>
            </div>
-         </div>
-       </div>
+           <div className="space-y-2">
+             <Label htmlFor="playerPaymentMethod">Payment Method</Label>
+             <Input
+               id="playerPaymentMethod"
+               name="playerPaymentMethod"
+               value={request.paymentMethod || 'N/A'}
+               disabled
+               className="bg-muted"
+             />
+           </div>
+        </div>
 
                {/* Second Row - Amount Info */}
         <div className="grid grid-cols-3 gap-4">
@@ -1224,33 +1221,28 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
               className="bg-muted"
             />
           </div>
+                                                                               <div className="space-y-2">
+              <Label htmlFor="paidAmount">Amount</Label>
+                           <Input
+                 id="paidAmount"
+                 name="paidAmount"
+                 type="text"
+                 value={paidAmount}
+                 onChange={handleAmountChange}
+                 placeholder="Enter amount"
+                 className="font-semibold"
+               />
+            </div>
                    <div className="space-y-2">
-            <Label htmlFor="paidAmount">Additional Amount</Label>
-                         <Input
-               id="paidAmount"
-               name="paidAmount"
-               type="text"
-               value={paidAmount}
-               onChange={handleAmountChange}
-               placeholder="Enter amount"
-               className="font-semibold"
-             />
-             {pendingAmount > 0 && (
-               <p className="text-xs text-muted-foreground">
-                 Max allowed: ${(request.amount - (request.paidAmount || 0)).toLocaleString()}
-               </p>
-             )}
+            <Label htmlFor="pendingAmount">Pending</Label>
+            <Input
+              id="pendingAmount"
+              name="pendingAmount"
+              value={`$${pendingAmount.toLocaleString()}`}
+              disabled
+              className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
+            />
           </div>
-         <div className="space-y-2">
-           <Label htmlFor="pendingAmount">Pending Amount</Label>
-           <Input
-             id="pendingAmount"
-             name="pendingAmount"
-             value={`$${pendingAmount.toLocaleString()}`}
-             disabled
-             className={`bg-muted font-semibold ${pendingAmount === 0 ? 'text-green-600' : 'text-orange-600'}`}
-           />
-         </div>
        </div>
 
                {/* Third Row - Payment Details */}
