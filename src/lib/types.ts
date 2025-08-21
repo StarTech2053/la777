@@ -69,7 +69,7 @@ export type Game = {
 };
 
 
-export type PaymentMethod = 'Chime' | 'CashApp';
+export type PaymentMethod = 'Chime' | 'CashApp' | 'RemainingWithdraw';
 
 export type Transaction = {
   id: string;
@@ -118,4 +118,45 @@ export type Report = {
   staffName: string;
   balanceAfter: number;
   notes?: string;
+};
+
+export type PaymentRecord = {
+  id: string;
+  date: string;
+  amount: number;
+  method: string;
+  tag: string;
+  paidBy: string;
+  staffName: string;
+  type?: string;
+};
+
+export type AuditRecord = {
+  id: string;
+  date: string;
+  action: string;
+  originalPendingAmount: number;
+  depositAmount: number;
+  withdrawAmount: number;
+  staffName: string;
+  notes: string;
+};
+
+export type WithdrawRequest = {
+  id: string;
+  playerName: string;
+  amount: number;
+  gameName: string;
+  date: string;
+  status: 'pending' | 'completed' | 'deleted';
+  staffName?: string;
+  paymentMethod?: string;
+  paymentTag?: string;
+  playerTag?: string;
+  pendingAmount?: number;
+  paidAmount?: number;
+  depositAmount?: number;
+  paymentMethods?: string[];
+  paymentTags?: string[];
+  paymentHistory?: PaymentRecord[];
 };

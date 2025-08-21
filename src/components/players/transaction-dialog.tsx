@@ -32,11 +32,12 @@ import { collection, onSnapshot, query, where, doc, updateDoc, increment, addDoc
 import { db } from "@/lib/firebase";
 
 const formSchema = z.object({
-  amount: z.coerce.number().positive("Amount must be a positive number."),
+  amount: z.coerce.number().min(0, "Amount must be a non-negative number."),
   tip: z.coerce.number().min(0).optional(),
   depositBonus: z.coerce.number().min(0).optional(),
-  paymentMethod: z.enum(["Chime", "CashApp"], { required_error: "Please select a payment method." }),
-  playerTag: z.string().min(1, "Please enter player's tag."),
+  paymentMethod: z.enum(["Chime", "CashApp", "RemainingWithdraw"], { required_error: "Please select a payment method." }),
+  paymentTag: z.string().optional(),
+  playerTag: z.string().optional(),
   gameName: z.string().min(1, "Please select a gaming account."),
 });
 
@@ -59,6 +60,16 @@ export function TransactionDialog({
 }: TransactionDialogProps) {
   const { toast } = useToast();
   const { name: staffName } = useAuth();
+     const [pendingWithdrawRequests, setPendingWithdrawRequests] = React.useState<{
+     id: string;
+     amount: number;
+     paidAmount?: number;
+     pendingAmount?: number;
+     depositAmount?: number;
+     date: string;
+   }[]>([]);
+  const [totalPendingWithdraw, setTotalPendingWithdraw] = React.useState(0);
+  const [activeTags, setActiveTags] = React.useState<PaymentTag[]>([]);
 
   const {
     register,
@@ -71,22 +82,168 @@ export function TransactionDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+        amount: 0,
         depositBonus: 0,
         tip: 0,
     }
   });
 
+  const selectedPaymentMethod = watch("paymentMethod");
+
+  // Fetch pending withdraw requests for this player
+  React.useEffect(() => {
+    if (player && isOpen) {
+      const withdrawQuery = query(
+        collection(db, 'transactions'),
+        where('playerName', '==', player.name),
+        where('type', '==', 'Withdraw'),
+        where('status', '==', 'pending')
+      );
+
+      const unsubscribe = onSnapshot(withdrawQuery, (snapshot) => {
+        const requests = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const originalAmount = data.amount || 0;
+          const paidAmount = data.paidAmount || 0;
+          const pendingAmount = data.pendingAmount || (originalAmount - paidAmount);
+          
+          console.log("🔍 Withdraw Request Data:", {
+            id: doc.id,
+            originalAmount: originalAmount,
+            paidAmount: paidAmount,
+            pendingAmount: pendingAmount,
+            calculatedPending: originalAmount - paidAmount
+          });
+          
+                     return {
+             id: doc.id,
+             amount: originalAmount,
+             paidAmount: paidAmount,
+             pendingAmount: pendingAmount,
+             depositAmount: data.depositAmount || 0,
+             date: data.date
+           };
+        });
+        
+        setPendingWithdrawRequests(requests);
+        
+        // Calculate total pending withdraw amount
+        const totalPending = requests.reduce((sum, req) => {
+          return sum + req.pendingAmount;
+        }, 0);
+        
+        console.log("💰 Total Pending Withdraw:", totalPending);
+        setTotalPendingWithdraw(totalPending);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [player, isOpen]);
+
 
   
   React.useEffect(() => {
     if (!isOpen) {
-      reset({ amount: undefined, depositBonus: 0, tip: 0, paymentMethod: undefined, playerTag: undefined, gameName: undefined });
+      reset({ 
+        amount: 0, 
+        depositBonus: 0, 
+        tip: 0, 
+        paymentMethod: undefined, 
+        paymentTag: undefined, 
+        playerTag: undefined, 
+        gameName: undefined 
+      });
     }
   }, [isOpen, reset]);
 
-  const onSubmit = async (data: FormValues) => {
-    if (!player || !staffName) return;
+  // Auto-set amount when RemainingWithdraw is selected (only if amount is 0)
+  React.useEffect(() => {
+    if (selectedPaymentMethod === 'RemainingWithdraw' && totalPendingWithdraw > 0) {
+      // Only auto-set if current amount is 0 or less
+      const currentAmount = watch('amount') || 0;
+      if (currentAmount <= 0) {
+        setValue('amount', totalPendingWithdraw);
+      }
+    }
+    // Don't clear amount when switching away from RemainingWithdraw
+    // Let user manually enter amount for other payment methods
+  }, [selectedPaymentMethod, totalPendingWithdraw, setValue, watch]);
 
+  // Fetch active payment tags when payment method changes
+  React.useEffect(() => {
+    if (selectedPaymentMethod && selectedPaymentMethod !== 'RemainingWithdraw') {
+      const tagsQuery = query(
+        collection(db, "paymentTags"),
+        where("method", "==", selectedPaymentMethod),
+        where("status", "==", "Active")
+      );
+      const unsubscribe = onSnapshot(tagsQuery, (snapshot) => {
+        const tagsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as PaymentTag));
+        setActiveTags(tagsData);
+      });
+      setValue('paymentTag', "", { shouldValidate: false });
+      return () => unsubscribe();
+    } else {
+      setActiveTags([]);
+    }
+  }, [selectedPaymentMethod, setValue]);
+
+  const onSubmit = async (data: FormValues) => {
+    console.log("🚀 Form submitted with data:", data);
+    console.log("🔍 Form type:", type);
+    console.log("👤 Player:", player?.name);
+    console.log("👨‍💼 Staff:", staffName);
+    
+    if (!player || !staffName) {
+      console.log("❌ Missing player or staff data");
+      return;
+    }
+
+    // Additional validation based on transaction type
+    if (type === 'deposit' && data.paymentMethod !== 'RemainingWithdraw' && (!data.paymentTag || data.paymentTag.trim() === '')) {
+      console.log("❌ Missing payment tag for deposit");
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please select a payment tag for deposit.",
+      });
+      return;
+    }
+
+    if (type === 'withdraw' && data.paymentMethod !== 'RemainingWithdraw' && (!data.playerTag || data.playerTag.trim() === '')) {
+      console.log("❌ Missing player tag for withdraw");
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please enter player's tag for withdrawal.",
+      });
+      return;
+    }
+
+    console.log("✅ Validation passed, starting transaction...");
+    
+    // Check if amount is greater than 0
+    if (data.amount <= 0) {
+      console.log("❌ Amount must be greater than 0");
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Amount must be greater than 0.",
+      });
+      return;
+    }
+
+    // Check if amount exceeds total pending withdraw for RemainingWithdraw method
+    if (data.paymentMethod === 'RemainingWithdraw' && data.amount > totalPendingWithdraw) {
+      console.log("❌ Amount exceeds total pending withdraw");
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: `Amount cannot exceed total pending withdraw amount ($${totalPendingWithdraw.toLocaleString()}).`,
+      });
+      return;
+    }
+    
     try {
       const batch = writeBatch(db);
       const playerRef = doc(db, 'players', player.id);
@@ -102,6 +259,46 @@ export function TransactionDialog({
       const gameDoc = gamesSnap.docs[0];
       const gameRef = gameDoc.ref;
       const currentGameBalance = gameDoc.data().balance || 0;
+
+             // Handle RemainingWithdraw payment method
+       if (data.paymentMethod === 'RemainingWithdraw') {
+         if (totalPendingWithdraw === 0) {
+           throw new Error('No pending withdraw requests found for this player.');
+         }
+         
+         // Use the amount entered by user, not total pending amount
+         const depositAmount = data.amount;
+         
+         // Process pending withdraw requests proportionally
+         let remainingDepositAmount = depositAmount;
+         
+         for (const request of pendingWithdrawRequests) {
+           if (remainingDepositAmount <= 0) break;
+           
+           const withdrawRef = doc(db, 'transactions', request.id);
+           const currentPendingAmount = request.pendingAmount || 0;
+           
+           if (currentPendingAmount > 0) {
+             const amountToDeposit = Math.min(remainingDepositAmount, currentPendingAmount);
+             const newDepositAmount = (request.depositAmount || 0) + amountToDeposit;
+             
+             // Calculate new pending amount: Original amount - Paid amount - Total deposit amount
+             const originalAmount = request.amount;
+             const paidAmount = request.paidAmount || 0;
+             const totalDepositAmount = newDepositAmount;
+             const newPendingAmount = Math.max(0, originalAmount - paidAmount - totalDepositAmount);
+             
+             // Update withdraw request with deposit amount (NOT paid amount)
+             batch.update(withdrawRef, {
+               depositAmount: newDepositAmount,
+               pendingAmount: newPendingAmount,
+               status: newPendingAmount === 0 ? 'completed' : 'pending'
+             });
+             
+             remainingDepositAmount -= amountToDeposit;
+           }
+         }
+       }
 
       const transactionType = type === 'deposit' ? 'Deposit' : 'Withdraw';
       
@@ -153,7 +350,12 @@ export function TransactionDialog({
 
              // Create transaction document with balance information
        const newTransactionRef = doc(collection(db, 'transactions'));
-       batch.set(newTransactionRef, {
+       
+       // Calculate deposit amount for RemainingWithdraw method
+       const depositAmount = data.paymentMethod === 'RemainingWithdraw' ? data.amount : 0;
+       
+       // Clean up data to remove undefined values for Firebase
+       const cleanData = {
          ...data,
          playerId: player.id,
          type: transactionType,
@@ -165,18 +367,55 @@ export function TransactionDialog({
          gameBalanceAfter: finalGameBalance,
          points: totalAmount, // Store total amount as points for games section
          amount: data.amount, // Keep original amount for reference
-         depositBonus: data.depositBonus, // Keep bonus percentage for reference
-         playerTag: data.playerTag, // Store player's tag for receiving payment
-         paymentTag: '', // Empty payment tag for staff requests
+         depositBonus: data.depositBonus || 0, // Keep bonus percentage for reference
+         paymentTag: data.paymentTag || null, // Store payment tag for receiving payment
+         playerTag: data.playerTag || null, // Store player's tag for receiving payment
+         tip: data.tip || 0, // Store tip amount
+         depositAmount: depositAmount, // Store deposit amount for RemainingWithdraw method
+                   notes: data.paymentMethod === 'RemainingWithdraw' ? 
+            `Partial payment of $${data.amount.toLocaleString()} processed from ${pendingWithdrawRequests.length} pending withdraw requests (Total pending: $${totalPendingWithdraw.toLocaleString()})` : 
+            null
+       };
+       
+       // Remove undefined values from cleanData
+       Object.keys(cleanData).forEach(key => {
+         if ((cleanData as any)[key] === undefined) {
+           delete (cleanData as any)[key];
+         }
        });
+       
+       batch.set(newTransactionRef, cleanData);
+
+       // Add deposit entry to payment history for RemainingWithdraw method
+       if (data.paymentMethod === 'RemainingWithdraw') {
+         for (const request of pendingWithdrawRequests) {
+           const depositPaymentRecord = {
+             id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+             amount: data.amount,
+             date: new Date().toISOString(),
+             method: 'Deposit (Staff)',
+             tag: `Gaming Account: ${data.gameName}`,
+             paidBy: staffName,
+             staffName: staffName,
+             type: 'deposit'
+           };
+           
+           // Add to subcollection
+           const paymentRef = doc(collection(db, 'transactions', request.id, 'payments'));
+           batch.set(paymentRef, depositPaymentRecord);
+         }
+       }
 
       await batch.commit();
       
       const bonusMessage = depositBonusAmount > 0 ? ` (including $${depositBonusAmount.toLocaleString()} bonus)` : '';
+             const withdrawMessage = data.paymentMethod === 'RemainingWithdraw' ? 
+         ` (partial payment from ${pendingWithdrawRequests.length} pending withdraw requests)` : '';
+      
       toast({
         variant: "success",
         title: "Success",
-        description: `${transactionType} of $${data.amount.toLocaleString()}${bonusMessage} has been processed successfully. Total points: $${totalAmount.toLocaleString()}. Game balance: $${currentGameBalance.toLocaleString()} → $${finalGameBalance.toLocaleString()}`,
+        description: `${transactionType} of $${data.amount.toLocaleString()}${bonusMessage}${withdrawMessage} has been processed successfully. Total points: $${totalAmount.toLocaleString()}. Game balance: $${currentGameBalance.toLocaleString()} → $${finalGameBalance.toLocaleString()}`,
       });
       
       onSuccess();
@@ -208,15 +447,22 @@ export function TransactionDialog({
              {type === 'deposit' ? (
                 <div className="flex gap-4">
                     <div className="space-y-2 flex-1">
-                        <Label htmlFor="deposit-amount">Deposit Amount ($)</Label>
+                        <Label htmlFor="deposit-amount">
+                            Deposit Amount ($)
+                            {selectedPaymentMethod === 'RemainingWithdraw' && totalPendingWithdraw > 0 && (
+                                <span className="text-sm text-muted-foreground ml-2">
+                                    (Max: ${totalPendingWithdraw.toLocaleString()})
+                                </span>
+                            )}
+                        </Label>
                         <Input
                             id="deposit-amount"
-                            name="amount"
                             type="number"
                             step="0.01"
                             autoComplete="off"
                             {...register("amount")}
                             placeholder="e.g., 50.00"
+                            className=""
                         />
                         {errors.amount && <p className="text-sm text-destructive">{errors.amount.message}</p>}
                     </div>
@@ -224,7 +470,6 @@ export function TransactionDialog({
                         <Label htmlFor="depositBonus">Deposit Bonus (%)</Label>
                         <Input
                             id="depositBonus"
-                            name="depositBonus"
                             type="number"
                             step="0.01"
                             autoComplete="off"
@@ -240,7 +485,6 @@ export function TransactionDialog({
                         <Label htmlFor="withdraw-amount">Withdrawal Amount ($)</Label>
                         <Input
                             id="withdraw-amount"
-                            name="amount"
                             type="number"
                             step="0.01"
                             autoComplete="off"
@@ -255,7 +499,6 @@ export function TransactionDialog({
                         <Label htmlFor="tip">Tip Amount ($)</Label>
                         <Input
                             id="tip"
-                            name="tip"
                             type="number"
                             step="0.01"
                             autoComplete="off"
@@ -273,12 +516,17 @@ export function TransactionDialog({
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger id="paymentMethod" name="paymentMethod">
+                    <SelectTrigger id="paymentMethod">
                       <SelectValue placeholder="Select a method" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Chime">Chime</SelectItem>
                       <SelectItem value="CashApp">CashApp</SelectItem>
+                      {totalPendingWithdraw > 0 && (
+                        <SelectItem value="RemainingWithdraw">
+                          Remaining Withdraw (${totalPendingWithdraw.toLocaleString()})
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 )}
@@ -287,21 +535,78 @@ export function TransactionDialog({
                  <p className="text-sm text-destructive">{errors.paymentMethod.message}</p>
               )}
             </div>
+
+                         {/* Show pending withdraw requests only when RemainingWithdraw is selected */}
+             {selectedPaymentMethod === 'RemainingWithdraw' && totalPendingWithdraw > 0 && (
+               <div className="space-y-2">
+                 <Label>Pending Withdraw Requests</Label>
+                 <div className="space-y-2 max-h-32 overflow-y-auto p-3 bg-muted rounded-lg">
+                   {pendingWithdrawRequests.map((request) => (
+                     <div key={request.id} className="flex justify-between items-center text-sm">
+                       <span>Request #{request.id.slice(-6)}</span>
+                       <span className="text-red-500">${request.amount?.toLocaleString()}</span>
+                     </div>
+                   ))}
+                   <div className="border-t pt-2 mt-2">
+                     <div className="flex justify-between items-center font-semibold">
+                       <span>Total Pending:</span>
+                       <span className="text-orange-600">${totalPendingWithdraw.toLocaleString()}</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             )}
             
-                         <div className="space-y-2">
-               <Label htmlFor="playerTag">Player's Tag</Label>
-               <Input
-                 id="playerTag"
-                 name="playerTag"
-                 type="text"
-                 autoComplete="off"
-                 {...register("playerTag")}
-                 placeholder="Enter player's payment tag"
-               />
-               {errors.playerTag && (
-                 <p className="text-sm text-destructive">{errors.playerTag.message}</p>
-               )}
-             </div>
+                         {/* Payment Tag for Deposit, Player Tag for Withdraw */}
+             {type === 'deposit' && selectedPaymentMethod && selectedPaymentMethod !== 'RemainingWithdraw' && (
+               <div className="space-y-2">
+                 <Label htmlFor="paymentTag">Payment Tag</Label>
+                 <Controller
+                   name="paymentTag"
+                   control={control}
+                   render={({ field }) => (
+                     <Select onValueChange={field.onChange} value={field.value}>
+                       <SelectTrigger id="paymentTag">
+                         <SelectValue placeholder="Select a tag" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {activeTags.length > 0 ? (
+                           activeTags.map(tag => (
+                             <SelectItem key={tag.id} value={tag.tag}>
+                               {tag.tag}
+                             </SelectItem>
+                           ))
+                         ) : (
+                           <SelectItem value="no-tags" disabled>
+                             No active tags for {selectedPaymentMethod}.
+                           </SelectItem>
+                         )}
+                       </SelectContent>
+                     </Select>
+                   )}
+                 />
+                 {errors.paymentTag && (
+                   <p className="text-sm text-destructive">{errors.paymentTag.message}</p>
+                 )}
+               </div>
+             )}
+
+             {/* Player Tag for Withdraw */}
+             {type === 'withdraw' && selectedPaymentMethod && selectedPaymentMethod !== 'RemainingWithdraw' && (
+               <div className="space-y-2">
+                 <Label htmlFor="playerTag">Player's Tag</Label>
+                 <Input
+                   id="playerTag"
+                   type="text"
+                   autoComplete="off"
+                   {...register("playerTag")}
+                   placeholder="Enter player's payment tag"
+                 />
+                 {errors.playerTag && (
+                   <p className="text-sm text-destructive">{errors.playerTag.message}</p>
+                 )}
+               </div>
+             )}
              <div className="space-y-2">
               <Label htmlFor="gameName">Gaming Account</Label>
               <Controller
@@ -309,7 +614,7 @@ export function TransactionDialog({
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger id="gameName" name="gameName">
+                    <SelectTrigger id="gameName">
                       <SelectValue placeholder="Select a gaming account" />
                     </SelectTrigger>
                     <SelectContent>

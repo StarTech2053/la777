@@ -27,34 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DateRangePickerDialog } from '@/components/ui/date-range-picker-dialog';
 import type { DateRange } from 'react-day-picker';
 import { useWithdrawNotifications } from '@/hooks/use-withdraw-notifications';
-
-interface PaymentRecord {
-  id: string;
-  date: string;
-  amount: number;
-  method: string;
-  tag: string;
-  paidBy: string;
-  staffName: string;
-}
-
-interface WithdrawRequest {
-  id: string;
-  playerName: string;
-  amount: number;
-  gameName: string;
-  date: string;
-  status: 'pending' | 'completed' | 'deleted';
-  staffName?: string;
-  paymentMethod?: string;
-  paymentTag?: string;
-  playerTag?: string;
-  pendingAmount?: number;
-  paidAmount?: number;
-  paymentMethods?: string[];
-  paymentTags?: string[];
-  paymentHistory?: PaymentRecord[];
-}
+import type { WithdrawRequest, PaymentRecord, AuditRecord } from '@/lib/types';
 
 export function WithdrawRequests() {
   const [withdrawRequests, setWithdrawRequests] = useState<WithdrawRequest[]>([]);
@@ -119,7 +92,8 @@ export function WithdrawRequests() {
             paymentTag: data.paymentTag || 'N/A',
             playerTag: data.playerTag || data.playerName || 'N/A',
             paidAmount: data.paidAmount || 0,
-            pendingAmount: Math.max(0, amount - (data.paidAmount || 0)),
+            pendingAmount: Math.max(0, amount - (data.paidAmount || 0) - (data.depositAmount || 0)),
+            depositAmount: data.depositAmount || 0, // Add deposit amount from transaction
             paymentMethods: paymentMethods.length > 0 ? paymentMethods : [data.paymentMethod || 'N/A'],
             paymentTags: paymentTags.length > 0 ? paymentTags : [data.paymentTag || 'N/A'],
             paymentHistory: paymentHistory
@@ -1014,20 +988,24 @@ export function WithdrawRequests() {
                    <p className="font-semibold">{selectedPaymentHistory.playerName}</p>
                  </div>
                  <div>
-                   <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
+                   <p className="text-sm font-medium text-muted-foreground">Total Request</p>
                    <p className="font-semibold">${selectedPaymentHistory.amount.toLocaleString()}</p>
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium text-muted-foreground">Paid Amount</p>
-                   <p className="font-semibold text-green-600">${selectedPaymentHistory.paidAmount?.toLocaleString() || '0'}</p>
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium text-muted-foreground">Pending Amount</p>
-                   <p className="font-semibold text-orange-600">${selectedPaymentHistory.pendingAmount?.toLocaleString() || '0'}</p>
                  </div>
                  <div>
                    <p className="text-sm font-medium text-muted-foreground">Status</p>
                    <div className="mt-1">{getStatusBadge(selectedPaymentHistory.status)}</div>
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Paid</p>
+                   <p className="font-semibold text-green-600">${selectedPaymentHistory.paidAmount?.toLocaleString() || '0'}</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Pending</p>
+                   <p className="font-semibold text-orange-600">${selectedPaymentHistory.pendingAmount?.toLocaleString() || '0'}</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Deposit</p>
+                   <p className="font-semibold text-blue-600">${selectedPaymentHistory.depositAmount?.toLocaleString() || '0'}</p>
                  </div>
                </div>
               
@@ -1035,9 +1013,9 @@ export function WithdrawRequests() {
                 <h4 className="font-medium">Payment Timeline</h4>
                 <div className="space-y-3">
                   {selectedPaymentHistory.paymentHistory && selectedPaymentHistory.paymentHistory.length > 0 ? (
-                    selectedPaymentHistory.paymentHistory
-                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                      .map((payment, index) => (
+                                         selectedPaymentHistory.paymentHistory
+                       .sort((a: PaymentRecord, b: PaymentRecord) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                       .map((payment: PaymentRecord, index: number) => (
                         <div key={payment.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
@@ -1157,8 +1135,8 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
             <Label>Payment History</Label>
            <div className="space-y-2 max-h-24 overflow-y-auto">
              {request.paymentHistory
-               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-               .map((payment, index) => (
+               .sort((a: PaymentRecord, b: PaymentRecord) => new Date(a.date).getTime() - new Date(b.date).getTime())
+               .map((payment: PaymentRecord, index: number) => (
                  <div key={payment.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
                    <div>
                      <span className="font-medium">${payment.amount.toLocaleString()}</span>
