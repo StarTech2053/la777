@@ -132,12 +132,12 @@ export function AddPlayerForm() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Player Name</Label>
-            <Input id="name" {...register("name")} placeholder="e.g., John Doe" />
+            <Input id="name" {...register("name")} placeholder="e.g., John Doe" autoComplete="name" />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="facebookUrl">Facebook Link</Label>
-            <Input id="facebookUrl" {...register("facebookUrl")} placeholder="https://facebook.com/..." />
+            <Input id="facebookUrl" {...register("facebookUrl")} placeholder="https://facebook.com/..." autoComplete="url" />
             {errors.facebookUrl && <p className="text-sm text-destructive">{errors.facebookUrl.message}</p>}
           </div>
           <div className="space-y-2">

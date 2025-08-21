@@ -157,12 +157,12 @@ export function EditPlayerDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Player Name</Label>
-              <Input id="name" {...register("name")} />
+              <Input id="name" {...register("name")} autoComplete="name" />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="facebookUrl">Facebook Link</Label>
-              <Input id="facebookUrl" {...register("facebookUrl")} />
+              <Input id="facebookUrl" {...register("facebookUrl")} autoComplete="url" />
               {errors.facebookUrl && <p className="text-sm text-destructive">{errors.facebookUrl.message}</p>}
             </div>
             <div className="space-y-2">

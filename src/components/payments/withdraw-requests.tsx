@@ -1214,6 +1214,7 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
                  onChange={handleAmountChange}
                  placeholder="Enter amount"
                  className="font-semibold"
+                 autoComplete="off"
                />
             </div>
                    <div className="space-y-2">
@@ -1250,6 +1251,7 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
               value={paymentTag}
               onChange={(e) => setPaymentTag(e.target.value)}
               placeholder="Enter payment tag"
+              autoComplete="off"
             />
           </div>
                     <div className="space-y-2">

@@ -539,8 +539,8 @@ export function TransactionDialog({
                          {/* Show pending withdraw requests only when RemainingWithdraw is selected */}
              {selectedPaymentMethod === 'RemainingWithdraw' && totalPendingWithdraw > 0 && (
                <div className="space-y-2">
-                 <Label>Pending Withdraw Requests</Label>
-                 <div className="space-y-2 max-h-32 overflow-y-auto p-3 bg-muted rounded-lg">
+                 <Label htmlFor="pending-requests">Pending Withdraw Requests</Label>
+                 <div id="pending-requests" className="space-y-2 max-h-32 overflow-y-auto p-3 bg-muted rounded-lg">
                    {pendingWithdrawRequests.map((request) => (
                      <div key={request.id} className="flex justify-between items-center text-sm">
                        <span>Request #{request.id.slice(-6)}</span>
