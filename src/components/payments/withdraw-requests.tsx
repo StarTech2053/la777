@@ -1069,9 +1069,10 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
   const { toast } = useToast();
   
   const currentPaidAmount = request.paidAmount || 0;
+  const currentDepositAmount = request.depositAmount || 0;
   const additionalPaidAmount = parseFloat(paidAmount) || 0;
   const totalPaidAmount = currentPaidAmount + additionalPaidAmount;
-  const pendingAmount = Math.max(0, request.amount - totalPaidAmount);
+  const pendingAmount = Math.max(0, request.amount - totalPaidAmount - currentDepositAmount);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1089,11 +1090,14 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
       return;
     }
     
-    if (totalPaidAmount > request.amount) {
+    const currentDepositAmount = request.depositAmount || 0;
+    const maxAllowedTotal = request.amount - currentDepositAmount;
+    
+    if (totalPaidAmount > maxAllowedTotal) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Total paid amount cannot exceed total amount!",
+        description: `Total paid amount cannot exceed $${maxAllowedTotal.toLocaleString()} (original amount minus deposits)!`,
       });
       return;
     }
@@ -1117,7 +1121,8 @@ function TransactionForm({ request, onSubmit, onCancel, onDelete }: TransactionF
     // Convert to number for validation
     const numValue = parseInt(numericValue) || 0;
     const currentPaidAmount = request.paidAmount || 0;
-    const maxAllowed = request.amount - currentPaidAmount;
+    const currentDepositAmount = request.depositAmount || 0;
+    const maxAllowed = request.amount - currentPaidAmount - currentDepositAmount;
     
     // If input exceeds max allowed, cap it
     if (numValue > maxAllowed) {
