@@ -13,6 +13,7 @@ import {
   Shield,
   Settings,
   CircleDollarSign,
+  BookOpen,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,6 +27,7 @@ const allNavItems: NavItem[] = [
   { title: "Games", href: "/games", icon: Gamepad2 },
   { title: "Payments", href: "/payments", icon: Banknote },
   { title: "Reports", href: "/reports", icon: FileText },
+  { title: "Rules & Promotion", href: "/rules-promotion", icon: BookOpen },
   { title: "Staff", href: "/staff", icon: Shield },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
@@ -41,7 +43,7 @@ export function SidebarNav() {
     }
     if (role === 'Agent') {
       return allNavItems.filter(item => 
-        item.title === 'Dashboard' || item.title === 'Players' || item.title === 'Games' || item.title === 'Payments'
+        item.title === 'Dashboard' || item.title === 'Players' || item.title === 'Games' || item.title === 'Payments' || item.title === 'Rules & Promotion'
       );
     }
     if (role === 'Cashier') {
