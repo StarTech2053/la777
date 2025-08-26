@@ -324,10 +324,10 @@ export default function RulesPromotionPage() {
                   <Label htmlFor="category" className="text-right">
                     Category *
                   </Label>
-                                     <Select value={newRule.category} onValueChange={(value) => setNewRule({ ...newRule, category: value })}>
-                     <SelectTrigger className="col-span-3">
-                       <SelectValue placeholder="Select category" />
-                     </SelectTrigger>
+                                                     <Select value={newRule.category} onValueChange={(value) => setNewRule({ ...newRule, category: value })}>
+                  <SelectTrigger id="category" className="col-span-3">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
                      <SelectContent>
                        <SelectItem value="withdraw">Withdraw</SelectItem>
                        <SelectItem value="freeplay-withdraw">Freeplay Withdraw</SelectItem>
@@ -405,10 +405,10 @@ export default function RulesPromotionPage() {
                  <Label htmlFor="edit-category" className="text-right">
                    Category *
                  </Label>
-                 <Select value={editingRule.category} onValueChange={(value) => setEditingRule({ ...editingRule, category: value })}>
-                   <SelectTrigger className="col-span-3">
-                     <SelectValue placeholder="Select category" />
-                   </SelectTrigger>
+                                 <Select value={editingRule.category} onValueChange={(value) => setEditingRule({ ...editingRule, category: value })}>
+                  <SelectTrigger id="edit-category" className="col-span-3">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
                    <SelectContent>
                      <SelectItem value="withdraw">Withdraw</SelectItem>
                      <SelectItem value="freeplay-withdraw">Freeplay Withdraw</SelectItem>
