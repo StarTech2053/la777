@@ -33,6 +33,10 @@ export default function RulesPromotionPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const [deletingRule, setDeletingRule] = useState(null);
+  const [isEditPromotionDialogOpen, setIsEditPromotionDialogOpen] = useState(false);
+  const [isDeletePromotionDialogOpen, setIsDeletePromotionDialogOpen] = useState(false);
+  const [editingPromotion, setEditingPromotion] = useState(null);
+  const [deletingPromotion, setDeletingPromotion] = useState(null);
   const [rules, setRules] = useState([
     {
       id: 1,
@@ -62,6 +66,35 @@ export default function RulesPromotionPage() {
     category: "",
     details: ""
   });
+  const [promotions, setPromotions] = useState([
+    {
+      id: 1,
+      title: "Welcome Bonus",
+      description: "New player welcome package",
+      bonusAmount: "₹1000",
+      wagering: "25x",
+      validUntil: "Dec 31, 2024",
+      type: "welcome"
+    },
+    {
+      id: 2,
+      title: "Referral Program",
+      description: "Earn rewards for referring friends",
+      bonusAmount: "₹500",
+      wagering: "10%",
+      validUntil: "Ongoing",
+      type: "referral"
+    },
+    {
+      id: 3,
+      title: "Weekly Cashback",
+      description: "Get cashback on weekly losses",
+      bonusAmount: "15%",
+      wagering: "₹10,000",
+      validUntil: "Every Monday",
+      type: "cashback"
+    }
+  ]);
   const { toast } = useToast();
 
 
@@ -194,21 +227,53 @@ export default function RulesPromotionPage() {
   };
 
   const handleEditPromotion = (promotion) => {
-    // For now, just show a toast
+    setEditingPromotion(promotion);
+    setIsEditPromotionDialogOpen(true);
+  };
+
+  const handleUpdatePromotion = () => {
+    if (!editingPromotion.title || !editingPromotion.description || !editingPromotion.bonusAmount) {
+      toast({
+        title: "Error",
+        description: "Please fill all required fields",
+        variant: "destructive",
+        className: "bg-red-500 text-white border-red-600",
+      });
+      return;
+    }
+
+    // Update the promotion in the promotions array
+    setPromotions(promotions.map(promotion => 
+      promotion.id === editingPromotion.id ? editingPromotion : promotion
+    ));
+    
     toast({
-      title: "Info",
-      description: "Edit promotion functionality coming soon!",
-      className: "bg-blue-500 text-white border-blue-600",
+      title: "Success",
+      description: "Promotion updated successfully!",
+      className: "bg-green-500 text-white border-green-600",
     });
+
+    setEditingPromotion(null);
+    setIsEditPromotionDialogOpen(false);
   };
 
   const handleDeletePromotion = (promotion) => {
-    // For now, just show a toast
+    setDeletingPromotion(promotion);
+    setIsDeletePromotionDialogOpen(true);
+  };
+
+  const confirmDeletePromotion = () => {
+    // Remove the promotion from the promotions array
+    setPromotions(promotions.filter(promotion => promotion.id !== deletingPromotion.id));
+    
     toast({
-      title: "Info",
-      description: "Delete promotion functionality coming soon!",
-      className: "bg-blue-500 text-white border-blue-600",
+      title: "Success",
+      description: "Promotion deleted successfully!",
+      className: "bg-green-500 text-white border-green-600",
     });
+
+    setDeletingPromotion(null);
+    setIsDeletePromotionDialogOpen(false);
   };
 
   return (
@@ -377,25 +442,129 @@ export default function RulesPromotionPage() {
          </DialogContent>
        </Dialog>
 
-       {/* Delete Confirmation Dialog */}
-       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-         <DialogContent className="sm:max-w-[425px]">
-           <DialogHeader>
-             <DialogTitle>Delete Rule</DialogTitle>
-             <DialogDescription>
-               Are you sure you want to delete "{deletingRule?.title}"? This action cannot be undone.
-             </DialogDescription>
-           </DialogHeader>
-           <DialogFooter>
-             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-               Cancel
-             </Button>
-             <Button variant="destructive" onClick={confirmDeleteRule}>
-               Delete Rule
-             </Button>
-           </DialogFooter>
-         </DialogContent>
-       </Dialog>
+               {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Delete Rule</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{deletingRule?.title}"? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteRule}>
+                Delete Rule
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Promotion Dialog */}
+        <Dialog open={isEditPromotionDialogOpen} onOpenChange={setIsEditPromotionDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Promotion</DialogTitle>
+              <DialogDescription>
+                Update the promotion details below.
+              </DialogDescription>
+            </DialogHeader>
+            {editingPromotion && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-promotion-title" className="text-right">
+                    Title *
+                  </Label>
+                  <Input
+                    id="edit-promotion-title"
+                    value={editingPromotion.title}
+                    onChange={(e) => setEditingPromotion({ ...editingPromotion, title: e.target.value })}
+                    className="col-span-3"
+                    placeholder="Enter promotion title"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-promotion-description" className="text-right">
+                    Description *
+                  </Label>
+                  <Input
+                    id="edit-promotion-description"
+                    value={editingPromotion.description}
+                    onChange={(e) => setEditingPromotion({ ...editingPromotion, description: e.target.value })}
+                    className="col-span-3"
+                    placeholder="Brief description"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-promotion-bonus" className="text-right">
+                    Bonus Amount *
+                  </Label>
+                  <Input
+                    id="edit-promotion-bonus"
+                    value={editingPromotion.bonusAmount}
+                    onChange={(e) => setEditingPromotion({ ...editingPromotion, bonusAmount: e.target.value })}
+                    className="col-span-3"
+                    placeholder="e.g., ₹1000 or 15%"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-promotion-wagering" className="text-right">
+                    Wagering
+                  </Label>
+                  <Input
+                    id="edit-promotion-wagering"
+                    value={editingPromotion.wagering}
+                    onChange={(e) => setEditingPromotion({ ...editingPromotion, wagering: e.target.value })}
+                    className="col-span-3"
+                    placeholder="e.g., 25x or 10%"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-promotion-valid" className="text-right">
+                    Valid Until
+                  </Label>
+                  <Input
+                    id="edit-promotion-valid"
+                    value={editingPromotion.validUntil}
+                    onChange={(e) => setEditingPromotion({ ...editingPromotion, validUntil: e.target.value })}
+                    className="col-span-3"
+                    placeholder="e.g., Dec 31, 2024"
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditPromotionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdatePromotion}>
+                Update Promotion
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Promotion Confirmation Dialog */}
+        <Dialog open={isDeletePromotionDialogOpen} onOpenChange={setIsDeletePromotionDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Delete Promotion</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{deletingPromotion?.title}"? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeletePromotionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDeletePromotion}>
+                Delete Promotion
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       <Tabs defaultValue="rules" className="space-y-4">
         <TabsList>
@@ -456,215 +625,77 @@ export default function RulesPromotionPage() {
            </div>
          </TabsContent>
 
-                 <TabsContent value="promotions" className="space-y-4">
-           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-             <Card>
-               <CardHeader className="relative">
-                 <div className="absolute top-2 right-2 flex items-center gap-1">
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0"
-                     onClick={() => handleEditPromotion({ title: "Welcome Bonus", description: "New player welcome package" })}
-                   >
-                     <Edit className="h-4 w-4" />
-                   </Button>
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700"
-                     onClick={() => handleCopyPromotion({ 
-                       title: "Welcome Bonus", 
-                       description: "New player welcome package",
-                       bonusAmount: "₹1000",
-                       wagering: "25x",
-                       validUntil: "Dec 31, 2024"
-                     })}
-                   >
-                     <Copy className="h-4 w-4" />
-                   </Button>
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                     onClick={() => handleDeletePromotion({ title: "Welcome Bonus" })}
-                   >
-                     <Trash2 className="h-4 w-4" />
-                   </Button>
-                 </div>
-                 <div className="flex items-center justify-between">
-                   <CardTitle className="flex items-center gap-2">
-                     <Gift className="h-5 w-5 text-purple-500" />
-                     Welcome Bonus
-                   </CardTitle>
-                   <Badge variant="secondary" className="bg-green-100 text-green-800">
-                     Active
-                   </Badge>
-                 </div>
-                 <CardDescription>
-                   New player welcome package
-                 </CardDescription>
-               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Bonus Amount:</span>
-                    <span className="text-sm">₹1000</span>
+                                   <TabsContent value="promotions" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {promotions.map((promotion) => (
+                <Card key={promotion.id}>
+                                     <CardHeader className="relative">
+                                           <div className="absolute top-1/2 right-2 transform -translate-y-1/2 flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleEditPromotion(promotion)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          onClick={() => handleDeletePromotion(promotion)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                     <div className="flex items-center justify-between pr-20">
+                       <CardTitle className="flex items-center gap-2">
+                         {promotion.type === "welcome" && <Gift className="h-5 w-5 text-purple-500" />}
+                         {promotion.type === "referral" && <Users className="h-5 w-5 text-blue-500" />}
+                         {promotion.type === "cashback" && <Calendar className="h-5 w-5 text-red-500" />}
+                         {promotion.title}
+                       </CardTitle>
+                       <Badge variant="secondary" className="bg-green-100 text-green-800">
+                         Active
+                       </Badge>
+                     </div>
+                  <CardDescription>
+                    {promotion.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">
+                        {promotion.type === "welcome" ? "Bonus Amount:" : 
+                         promotion.type === "referral" ? "Referral Bonus:" : "Cashback Rate:"}
+                      </span>
+                      <span className="text-sm">{promotion.bonusAmount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">
+                        {promotion.type === "welcome" ? "Wagering:" : 
+                         promotion.type === "referral" ? "Commission:" : "Max Amount:"}
+                      </span>
+                      <span className="text-sm">{promotion.wagering}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">
+                        {promotion.type === "welcome" ? "Valid Until:" : 
+                         promotion.type === "referral" ? "Min Deposit:" : "Processed:"}
+                      </span>
+                      <span className="text-sm">{promotion.validUntil}</span>
+                    </div>
+                    <Separator />
+                    <Button className="w-full" size="sm" variant={promotion.type === "welcome" ? "default" : "outline"}>
+                      {promotion.type === "welcome" ? "Claim Bonus" : 
+                       promotion.type === "referral" ? "Get Referral Link" : "View Details"}
+                    </Button>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Wagering:</span>
-                    <span className="text-sm">25x</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Valid Until:</span>
-                    <span className="text-sm">Dec 31, 2024</span>
-                  </div>
-                  <Separator />
-                  <Button className="w-full" size="sm">
-                    Claim Bonus
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-                         <Card>
-               <CardHeader className="relative">
-                 <div className="absolute top-2 right-2 flex items-center gap-1">
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0"
-                     onClick={() => handleEditPromotion({ title: "Referral Program", description: "Earn rewards for referring friends" })}
-                   >
-                     <Edit className="h-4 w-4" />
-                   </Button>
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700"
-                     onClick={() => handleCopyPromotion({ 
-                       title: "Referral Program", 
-                       description: "Earn rewards for referring friends",
-                       bonusAmount: "₹500",
-                       wagering: "10%",
-                       validUntil: "Ongoing"
-                     })}
-                   >
-                     <Copy className="h-4 w-4" />
-                   </Button>
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                     onClick={() => handleDeletePromotion({ title: "Referral Program" })}
-                   >
-                     <Trash2 className="h-4 w-4" />
-                   </Button>
-                 </div>
-                 <div className="flex items-center justify-between">
-                   <CardTitle className="flex items-center gap-2">
-                     <Users className="h-5 w-5 text-blue-500" />
-                     Referral Program
-                   </CardTitle>
-                   <Badge variant="secondary" className="bg-green-100 text-green-800">
-                     Active
-                   </Badge>
-                 </div>
-                 <CardDescription>
-                   Earn rewards for referring friends
-                 </CardDescription>
-               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Referral Bonus:</span>
-                    <span className="text-sm">₹500</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Commission:</span>
-                    <span className="text-sm">10%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Min Deposit:</span>
-                    <span className="text-sm">₹1000</span>
-                  </div>
-                  <Separator />
-                  <Button className="w-full" size="sm" variant="outline">
-                    Get Referral Link
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-                         <Card>
-               <CardHeader className="relative">
-                 <div className="absolute top-2 right-2 flex items-center gap-1">
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0"
-                     onClick={() => handleEditPromotion({ title: "Weekly Cashback", description: "Get cashback on weekly losses" })}
-                   >
-                     <Edit className="h-4 w-4" />
-                   </Button>
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700"
-                     onClick={() => handleCopyPromotion({ 
-                       title: "Weekly Cashback", 
-                       description: "Get cashback on weekly losses",
-                       bonusAmount: "15%",
-                       wagering: "₹10,000",
-                       validUntil: "Every Monday"
-                     })}
-                   >
-                     <Copy className="h-4 w-4" />
-                   </Button>
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                     onClick={() => handleDeletePromotion({ title: "Weekly Cashback" })}
-                   >
-                     <Trash2 className="h-4 w-4" />
-                   </Button>
-                 </div>
-                 <div className="flex items-center justify-between">
-                   <CardTitle className="flex items-center gap-2">
-                     <Calendar className="h-5 w-5 text-red-500" />
-                     Weekly Cashback
-                   </CardTitle>
-                   <Badge variant="secondary" className="bg-green-100 text-green-800">
-                     Active
-                   </Badge>
-                 </div>
-                 <CardDescription>
-                   Get cashback on weekly losses
-                 </CardDescription>
-               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Cashback Rate:</span>
-                    <span className="text-sm">15%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Max Amount:</span>
-                    <span className="text-sm">₹10,000</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Processed:</span>
-                    <span className="text-sm">Every Monday</span>
-                  </div>
-                  <Separator />
-                  <Button className="w-full" size="sm" variant="outline">
-                    View Details
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+              ))}
+            </div>
         </TabsContent>
       </Tabs>
     </div>
