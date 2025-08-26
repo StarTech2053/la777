@@ -4,9 +4,106 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // TEMPORARY: Allow all operations for testing
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/staff/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'Super Admin';
+    }
+    
+    // Helper function to check if user is agent
+    function isAgent() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/staff/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'Agent';
+    }
+    
+    // Helper function to check if user is cashier
+    function isCashier() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/staff/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'Cashier';
+    }
+    
+    // Helper function to check if user is staff member
+    function isStaff() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+    
+    // Staff collection - only staff can read their own data, admins can read all
+    match /staff/{staffId} {
+      allow read: if isAuthenticated() && (request.auth.uid == staffId || isAdmin());
+      allow write: if isAdmin();
+    }
+    
+    // Players collection - agents and admins can read/write
+    match /players/{playerId} {
+      allow read: if isAgent() || isAdmin();
+      allow write: if isAgent() || isAdmin();
+    }
+    
+    // Games collection - agents and admins can read/write
+    match /games/{gameId} {
+      allow read: if isAgent() || isAdmin();
+      allow write: if isAgent() || isAdmin();
+    }
+    
+    // Transactions collection - cashiers can read/write, agents and admins can read
+    match /transactions/{transactionId} {
+      allow read: if isCashier() || isAgent() || isAdmin();
+      allow write: if isCashier() || isAdmin();
+    }
+    
+    // Payment tags collection - cashiers and admins can read/write
+    match /paymentTags/{tagId} {
+      allow read: if isCashier() || isAdmin();
+      allow write: if isCashier() || isAdmin();
+    }
+    
+    // Reports collection - agents and admins can read
+    match /reports/{reportId} {
+      allow read: if isAgent() || isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Withdraw requests collection - cashiers can read/write, agents and admins can read
+    match /withdrawRequests/{requestId} {
+      allow read: if isCashier() || isAgent() || isAdmin();
+      allow write: if isCashier() || isAdmin();
+    }
+    
+    // Rules collection - agents and admins can read/write
+    match /rules/{ruleId} {
+      allow read: if isAgent() || isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Promotions collection - agents and admins can read/write
+    match /promotions/{promotionId} {
+      allow read: if isAgent() || isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // System settings - only admins can access
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Audit logs - only admins can read
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // No one can write audit logs directly
+    }
+    
+    // Deny all other access
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

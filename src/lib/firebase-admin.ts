@@ -1,14 +1,80 @@
-// Firebase REST API approach (simplified)
-import { db } from './firebase';
-import { doc, setDoc, collection, getDocs, limit, query } from 'firebase/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import * as fs from 'fs';
+import * as path from 'path';
 
-const FIREBASE_API_KEY = "AIzaSyBSrAtUGXDh2BzUzUzd3s4I51mxRx6XFzo";
-const PROJECT_ID = "panelpilot-pro";
+// Use environment variable for API key instead of hardcoding
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
-// Initialize (no-op for compatibility)
-const initializeAdminApp = async (): Promise<void> => {
-  console.log("✅ Using Firebase REST API approach");
-  return Promise.resolve();
+if (!FIREBASE_API_KEY) {
+  throw new Error('FIREBASE_API_KEY environment variable is required');
+}
+
+let adminApp: any = null;
+let adminDb: any = null;
+let adminAuth: any = null;
+
+const initializeAdminApp = async () => {
+  if (adminApp) {
+    console.log("✅ Firebase Admin SDK already initialized!");
+    return;
+  }
+
+  try {
+    // Try to find service account key file
+    const possiblePaths = [
+      './lib/serviceAccountKey.json',
+      './src/lib/serviceAccountKey.json',
+      process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH || './lib/serviceAccountKey.json'
+    ];
+
+    let serviceAccountPath = null;
+    for (const path of possiblePaths) {
+      if (fs.existsSync(path)) {
+        serviceAccountPath = path;
+        break;
+      }
+    }
+
+    if (!serviceAccountPath) {
+      throw new Error('Service account key file not found');
+    }
+
+    console.log("📁 Using service account from:", serviceAccountPath);
+    
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    });
+
+    adminDb = getFirestore(adminApp);
+    adminAuth = getAuth(adminApp);
+    
+    console.log("✅ Firebase Admin SDK initialized successfully!");
+    
+  } catch (error: any) {
+    console.error("❌ Firebase Admin SDK initialization failed:");
+    console.error("Error:", error.message);
+    console.error("Stack:", error.stack);
+    throw error;
+  }
+};
+
+const getAdminDb = () => {
+  if (!adminDb) {
+    throw new Error('Firebase Admin SDK not initialized. Call initializeAdminApp() first.');
+  }
+  return adminDb;
+};
+
+const getAdminAuth = () => {
+  if (!adminAuth) {
+    throw new Error('Firebase Admin SDK not initialized. Call initializeAdminApp() first.');
+  }
+  return adminAuth;
 };
 
 // Create user using Firebase REST API
@@ -61,57 +127,27 @@ const createUser = async (email: string, password: string, displayName: string) 
         })
       });
 
-      if (updateResponse.ok) {
-        console.log("✅ Display name updated");
-      } else {
-        console.warn("⚠️ Failed to update display name");
+      if (!updateResponse.ok) {
+        console.warn("⚠️ Failed to update display name, but user was created");
       }
     }
     
     return {
       uid: data.localId,
-      email: data.email || email,
+      email: data.email,
       displayName: displayName
     };
+    
   } catch (error: any) {
     console.error("❌ Error creating user:", error);
     throw error;
   }
 };
 
-// Firestore operations using client SDK
-const getAdminDb = () => {
-  return {
-    collection: (collectionName: string) => {
-      return {
-        doc: (docId: string) => {
-          return {
-            set: async (data: any) => {
-              await setDoc(doc(db, collectionName, docId), data);
-            }
-          };
-        },
-        limit: (limitCount: number) => {
-          return {
-            get: async () => {
-              const q = query(collection(db, collectionName), limit(limitCount));
-              const snapshot = await getDocs(q);
-              return {
-                empty: snapshot.empty,
-                docs: snapshot.docs
-              };
-            }
-          };
-        }
-      };
-    }
-  };
-};
-
 // Test function to verify user creation
 const testUserLogin = async (email: string, password: string) => {
   try {
-    console.log("🧪 Testing user login for:", email);
+    console.log("🔧 Testing login for:", email);
     
     const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
       method: 'POST',
@@ -127,20 +163,23 @@ const testUserLogin = async (email: string, password: string) => {
 
     const data = await response.json();
     
-    if (response.ok) {
-      console.log("✅ Test login successful:", data.localId);
-      return { success: true, uid: data.localId };
-    } else {
-      console.error("❌ Test login failed:", data.error?.message);
-      return { success: false, error: data.error?.message };
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Login failed');
     }
+
+    console.log("✅ Login test successful for:", email);
+    return { success: true, uid: data.localId };
+    
   } catch (error: any) {
-    console.error("❌ Test login error:", error);
-    return { success: false, error: error.message };
+    console.error("❌ Login test failed:", error);
+    throw error;
   }
 };
 
-// Legacy exports for compatibility
-const adminDb = getAdminDb();
-
-export { initializeAdminApp, adminDb, getAdminDb, createUser, testUserLogin };
+export {
+  initializeAdminApp,
+  getAdminDb,
+  getAdminAuth,
+  createUser,
+  testUserLogin
+};
