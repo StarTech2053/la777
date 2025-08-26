@@ -302,6 +302,7 @@ export default function RulesPromotionPage() {
                   </Label>
                   <Input
                     id="title"
+                    name="title"
                     value={newRule.title}
                     onChange={(e) => setNewRule({ ...newRule, title: e.target.value })}
                     className="col-span-3"
@@ -314,6 +315,7 @@ export default function RulesPromotionPage() {
                   </Label>
                   <Input
                     id="description"
+                    name="description"
                     value={newRule.description}
                     onChange={(e) => setNewRule({ ...newRule, description: e.target.value })}
                     className="col-span-3"
@@ -341,6 +343,7 @@ export default function RulesPromotionPage() {
                   </Label>
                   <Textarea
                     id="details"
+                    name="details"
                     value={newRule.details}
                     onChange={(e) => setNewRule({ ...newRule, details: e.target.value })}
                     className="col-span-3"
@@ -383,6 +386,7 @@ export default function RulesPromotionPage() {
                  </Label>
                  <Input
                    id="edit-title"
+                   name="edit-title"
                    value={editingRule.title}
                    onChange={(e) => setEditingRule({ ...editingRule, title: e.target.value })}
                    className="col-span-3"
@@ -395,6 +399,7 @@ export default function RulesPromotionPage() {
                  </Label>
                  <Input
                    id="edit-description"
+                   name="edit-description"
                    value={editingRule.description}
                    onChange={(e) => setEditingRule({ ...editingRule, description: e.target.value })}
                    className="col-span-3"
@@ -422,6 +427,7 @@ export default function RulesPromotionPage() {
                  </Label>
                  <Textarea
                    id="edit-details"
+                   name="edit-details"
                    value={editingRule.details}
                    onChange={(e) => setEditingRule({ ...editingRule, details: e.target.value })}
                    className="col-span-3"
@@ -479,6 +485,7 @@ export default function RulesPromotionPage() {
                   </Label>
                   <Input
                     id="edit-promotion-title"
+                    name="edit-promotion-title"
                     value={editingPromotion.title}
                     onChange={(e) => setEditingPromotion({ ...editingPromotion, title: e.target.value })}
                     className="col-span-3"
@@ -491,6 +498,7 @@ export default function RulesPromotionPage() {
                   </Label>
                   <Input
                     id="edit-promotion-description"
+                    name="edit-promotion-description"
                     value={editingPromotion.description}
                     onChange={(e) => setEditingPromotion({ ...editingPromotion, description: e.target.value })}
                     className="col-span-3"
@@ -503,6 +511,7 @@ export default function RulesPromotionPage() {
                   </Label>
                   <Input
                     id="edit-promotion-bonus"
+                    name="edit-promotion-bonus"
                     value={editingPromotion.bonusAmount}
                     onChange={(e) => setEditingPromotion({ ...editingPromotion, bonusAmount: e.target.value })}
                     className="col-span-3"
@@ -515,6 +524,7 @@ export default function RulesPromotionPage() {
                   </Label>
                   <Input
                     id="edit-promotion-wagering"
+                    name="edit-promotion-wagering"
                     value={editingPromotion.wagering}
                     onChange={(e) => setEditingPromotion({ ...editingPromotion, wagering: e.target.value })}
                     className="col-span-3"
@@ -527,6 +537,7 @@ export default function RulesPromotionPage() {
                   </Label>
                   <Input
                     id="edit-promotion-valid"
+                    name="edit-promotion-valid"
                     value={editingPromotion.validUntil}
                     onChange={(e) => setEditingPromotion({ ...editingPromotion, validUntil: e.target.value })}
                     className="col-span-3"
