@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-
-if (!FIREBASE_API_KEY) {
-  throw new Error('FIREBASE_API_KEY environment variable is required');
-}
+const FIREBASE_API_KEY = "AIzaSyBSrAtUGXDh2BzUzUzd3s4I51mxRx6XFzo";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,26 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid email format' },
-        { status: 400 }
-      );
-    }
-
-    // Validate password strength
-    if (newPassword.length < 8) {
-      return NextResponse.json(
-        { success: false, error: 'New password must be at least 8 characters long' },
-        { status: 400 }
-      );
-    }
-
-    // Rate limiting check (basic implementation)
-    const clientIP = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
-    console.log("🔧 Changing password for:", email, "from IP:", clientIP);
+    console.log("🔧 Changing password for:", email);
 
     // Step 1: Sign in with current password to get ID token
     const signInResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
@@ -116,7 +93,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error changing password:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }

@@ -630,24 +630,24 @@ export default function RulesPromotionPage() {
               {promotions.map((promotion) => (
                 <Card key={promotion.id}>
                                      <CardHeader className="relative">
-                                           <div className="absolute top-1/2 right-2 transform -translate-y-1/2 flex items-center gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleEditPromotion(promotion)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                          onClick={() => handleDeletePromotion(promotion)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                     <div className="absolute top-2 right-2 flex items-center gap-1">
+                       <Button 
+                         variant="ghost" 
+                         size="sm" 
+                         className="h-8 w-8 p-0"
+                         onClick={() => handleEditPromotion(promotion)}
+                       >
+                         <Edit className="h-4 w-4" />
+                       </Button>
+                       <Button 
+                         variant="ghost" 
+                         size="sm" 
+                         className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                         onClick={() => handleDeletePromotion(promotion)}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     </div>
                      <div className="flex items-center justify-between pr-20">
                        <CardTitle className="flex items-center gap-2">
                          {promotion.type === "welcome" && <Gift className="h-5 w-5 text-purple-500" />}

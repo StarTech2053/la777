@@ -1,67 +1,19 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Helper function to check if user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Helper function to check if user is admin
-    function isAdmin() {
-      return isAuthenticated() && 
-        firestore.get(/databases/(default)/documents/staff/$(request.auth.uid)).data.role == 'Super Admin';
-    }
-    
-    // Helper function to check if user is agent
-    function isAgent() {
-      return isAuthenticated() && 
-        firestore.get(/databases/(default)/documents/staff/$(request.auth.uid)).data.role == 'Agent';
-    }
-    
-    // Helper function to check if user is cashier
-    function isCashier() {
-      return isAuthenticated() && 
-        firestore.get(/databases/(default)/documents/staff/$(request.auth.uid)).data.role == 'Cashier';
-    }
-    
-    // Helper function to check if user is staff member
-    function isStaff() {
-      return isAuthenticated() && 
-        firestore.exists(/databases/(default)/documents/staff/$(request.auth.uid));
-    }
-    
-    // Avatar images - users can only access their own avatars, staff can access all
+    // Allow authenticated users to read and write their own files
     match /avatars/{userId}/{allPaths=**} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isStaff());
-      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow read, write: if request.auth != null;
     }
     
-    // Game images - agents and admins can access
+    // Allow authenticated users to read and write game images
     match /games/{gameId}/{allPaths=**} {
-      allow read: if isAgent() || isAdmin();
-      allow write: if isAgent() || isAdmin();
+      allow read, write: if request.auth != null;
     }
     
-    // Staff profile images - staff can access their own, admins can access all
-    match /staff/{staffId}/{allPaths=**} {
-      allow read: if isAuthenticated() && (request.auth.uid == staffId || isAdmin());
-      allow write: if isAuthenticated() && (request.auth.uid == staffId || isAdmin());
-    }
-    
-    // System images - only admins can access
-    match /system/{allPaths=**} {
-      allow read, write: if isAdmin();
-    }
-    
-    // Temporary uploads - authenticated users can upload, but files are automatically deleted
-    match /temp/{userId}/{allPaths=**} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
-    }
-    
-    // Deny all other access
+    // Allow authenticated users to read and write any files (for development)
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }
