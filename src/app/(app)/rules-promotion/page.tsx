@@ -283,7 +283,7 @@ export default function RulesPromotionPage() {
         <div className="flex items-center space-x-2">
           <Dialog open={isAddRuleDialogOpen} onOpenChange={setIsAddRuleDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button type="button">
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Rule
               </Button>
@@ -353,16 +353,16 @@ export default function RulesPromotionPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddRuleDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setIsAddRuleDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleAddRule}>
+                <Button type="button" onClick={handleAddRule}>
                   Add Rule
                 </Button>
               </DialogFooter>
             </DialogContent>
                      </Dialog>
-           <Button variant="outline">
+           <Button type="button" variant="outline">
              <Gift className="mr-2 h-4 w-4" />
              Create Promotion
            </Button>
@@ -438,10 +438,10 @@ export default function RulesPromotionPage() {
              </div>
            )}
            <DialogFooter>
-             <Button variant="outline" onClick={() => setIsEditRuleDialogOpen(false)}>
+             <Button type="button" variant="outline" onClick={() => setIsEditRuleDialogOpen(false)}>
                Cancel
              </Button>
-             <Button onClick={handleUpdateRule}>
+             <Button type="button" onClick={handleUpdateRule}>
                Update Rule
              </Button>
            </DialogFooter>
@@ -457,14 +457,14 @@ export default function RulesPromotionPage() {
                 Are you sure you want to delete "{deletingRule?.title}"? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={confirmDeleteRule}>
-                Delete Rule
-              </Button>
-            </DialogFooter>
+                       <DialogFooter>
+             <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+               Cancel
+             </Button>
+             <Button type="button" variant="destructive" onClick={confirmDeleteRule}>
+               Delete Rule
+             </Button>
+           </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -546,14 +546,14 @@ export default function RulesPromotionPage() {
                 </div>
               </div>
             )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditPromotionDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdatePromotion}>
-                Update Promotion
-              </Button>
-            </DialogFooter>
+                       <DialogFooter>
+             <Button type="button" variant="outline" onClick={() => setIsEditPromotionDialogOpen(false)}>
+               Cancel
+             </Button>
+             <Button type="button" onClick={handleUpdatePromotion}>
+               Update Promotion
+             </Button>
+           </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -566,14 +566,14 @@ export default function RulesPromotionPage() {
                 Are you sure you want to delete "{deletingPromotion?.title}"? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeletePromotionDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={confirmDeletePromotion}>
-                Delete Promotion
-              </Button>
-            </DialogFooter>
+                       <DialogFooter>
+             <Button type="button" variant="outline" onClick={() => setIsDeletePromotionDialogOpen(false)}>
+               Cancel
+             </Button>
+             <Button type="button" variant="destructive" onClick={confirmDeletePromotion}>
+               Delete Promotion
+             </Button>
+           </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -590,6 +590,7 @@ export default function RulesPromotionPage() {
                                    <CardHeader className="relative">
                     <div className="absolute top-2 right-2 flex items-center gap-1">
                       <Button 
+                        type="button"
                         variant="ghost" 
                         size="sm" 
                         className="h-8 w-8 p-0"
@@ -598,6 +599,7 @@ export default function RulesPromotionPage() {
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
+                        type="button"
                         variant="ghost" 
                         size="sm" 
                         className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700"
@@ -606,6 +608,7 @@ export default function RulesPromotionPage() {
                         <Copy className="h-4 w-4" />
                       </Button>
                       <Button 
+                        type="button"
                         variant="ghost" 
                         size="sm" 
                         className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
@@ -642,22 +645,24 @@ export default function RulesPromotionPage() {
                 <Card key={promotion.id}>
                                      <CardHeader className="relative">
                      <div className="absolute top-2 right-2 flex items-center gap-1">
-                       <Button 
-                         variant="ghost" 
-                         size="sm" 
-                         className="h-8 w-8 p-0"
-                         onClick={() => handleEditPromotion(promotion)}
-                       >
-                         <Edit className="h-4 w-4" />
-                       </Button>
-                       <Button 
-                         variant="ghost" 
-                         size="sm" 
-                         className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                         onClick={() => handleDeletePromotion(promotion)}
-                       >
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
+                                             <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleEditPromotion(promotion)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                        onClick={() => handleDeletePromotion(promotion)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                      </div>
                      <div className="flex items-center justify-between pr-20">
                        <CardTitle className="flex items-center gap-2">
@@ -698,7 +703,7 @@ export default function RulesPromotionPage() {
                       <span className="text-sm">{promotion.validUntil}</span>
                     </div>
                     <Separator />
-                    <Button className="w-full" size="sm" variant={promotion.type === "welcome" ? "default" : "outline"}>
+                    <Button type="button" className="w-full" size="sm" variant={promotion.type === "welcome" ? "default" : "outline"}>
                       {promotion.type === "welcome" ? "Claim Bonus" : 
                        promotion.type === "referral" ? "Get Referral Link" : "View Details"}
                     </Button>
