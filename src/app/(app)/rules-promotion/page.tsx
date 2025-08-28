@@ -1,6 +1,25 @@
 "use client";
 
 import { useState } from "react";
+
+// Types
+interface Rule {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  details: string;
+}
+
+interface Promotion {
+  id: number;
+  title: string;
+  description: string;
+  bonusAmount: string;
+  wagering: string;
+  validUntil: string;
+  type: string;
+}
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -31,13 +50,13 @@ export default function RulesPromotionPage() {
   const [isAddRuleDialogOpen, setIsAddRuleDialogOpen] = useState(false);
   const [isEditRuleDialogOpen, setIsEditRuleDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingRule, setEditingRule] = useState(null);
-  const [deletingRule, setDeletingRule] = useState(null);
+  const [editingRule, setEditingRule] = useState<Rule | null>(null);
+  const [deletingRule, setDeletingRule] = useState<Rule | null>(null);
   const [isEditPromotionDialogOpen, setIsEditPromotionDialogOpen] = useState(false);
   const [isDeletePromotionDialogOpen, setIsDeletePromotionDialogOpen] = useState(false);
-  const [editingPromotion, setEditingPromotion] = useState(null);
-  const [deletingPromotion, setDeletingPromotion] = useState(null);
-  const [rules, setRules] = useState([
+  const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
+  const [deletingPromotion, setDeletingPromotion] = useState<Promotion | null>(null);
+  const [rules, setRules] = useState<Rule[]>([
     {
       id: 1,
       title: "General Rules",
@@ -66,7 +85,7 @@ export default function RulesPromotionPage() {
     category: "",
     details: ""
   });
-  const [promotions, setPromotions] = useState([
+  const [promotions, setPromotions] = useState<Promotion[]>([
     {
       id: 1,
       title: "Welcome Bonus",
@@ -134,13 +153,13 @@ export default function RulesPromotionPage() {
     setIsAddRuleDialogOpen(false);
   };
 
-  const handleEditRule = (rule) => {
+  const handleEditRule = (rule: Rule) => {
     setEditingRule(rule);
     setIsEditRuleDialogOpen(true);
   };
 
   const handleUpdateRule = () => {
-    if (!editingRule.title || !editingRule.description || !editingRule.category) {
+    if (!editingRule || !editingRule.title || !editingRule.description || !editingRule.category) {
       toast({
         title: "Error",
         description: "Please fill all required fields",
@@ -165,12 +184,13 @@ export default function RulesPromotionPage() {
     setIsEditRuleDialogOpen(false);
   };
 
-  const handleDeleteRule = (rule) => {
+  const handleDeleteRule = (rule: Rule) => {
     setDeletingRule(rule);
     setIsDeleteDialogOpen(true);
   };
 
   const confirmDeleteRule = () => {
+    if (!deletingRule) return;
     // Remove the rule from the rules array
     setRules(rules.filter(rule => rule.id !== deletingRule.id));
     
@@ -184,7 +204,7 @@ export default function RulesPromotionPage() {
     setIsDeleteDialogOpen(false);
   };
 
-  const handleCopyRule = (rule) => {
+  const handleCopyRule = (rule: Rule) => {
     // Copy only the details field
     const detailsText = rule.details;
     
@@ -205,7 +225,7 @@ export default function RulesPromotionPage() {
     });
   };
 
-  const handleCopyPromotion = (promotion) => {
+  const handleCopyPromotion = (promotion: Promotion) => {
     // Copy promotion details
     const promotionText = `Title: ${promotion.title}\nDescription: ${promotion.description}\nBonus Amount: ${promotion.bonusAmount}\nWagering: ${promotion.wagering}\nValid Until: ${promotion.validUntil}`;
     
@@ -226,13 +246,13 @@ export default function RulesPromotionPage() {
     });
   };
 
-  const handleEditPromotion = (promotion) => {
+  const handleEditPromotion = (promotion: Promotion) => {
     setEditingPromotion(promotion);
     setIsEditPromotionDialogOpen(true);
   };
 
   const handleUpdatePromotion = () => {
-    if (!editingPromotion.title || !editingPromotion.description || !editingPromotion.bonusAmount) {
+    if (!editingPromotion || !editingPromotion.title || !editingPromotion.description || !editingPromotion.bonusAmount) {
       toast({
         title: "Error",
         description: "Please fill all required fields",
@@ -257,12 +277,13 @@ export default function RulesPromotionPage() {
     setIsEditPromotionDialogOpen(false);
   };
 
-  const handleDeletePromotion = (promotion) => {
+  const handleDeletePromotion = (promotion: Promotion) => {
     setDeletingPromotion(promotion);
     setIsDeletePromotionDialogOpen(true);
   };
 
   const confirmDeletePromotion = () => {
+    if (!deletingPromotion) return;
     // Remove the promotion from the promotions array
     setPromotions(promotions.filter(promotion => promotion.id !== deletingPromotion.id));
     
