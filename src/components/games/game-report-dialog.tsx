@@ -108,37 +108,48 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
       };
 
       const processTransactions = (transactions: Transaction[]) => {
-        // Combine transactions and recharges, then sort
+        // Combine transactions and recharges, then sort OLDEST FIRST for correct calculation
         const gameRecharges = (game.rechargeHistory || []).map(r => ({ ...r, id: `recharge-${r.date}` }));
-        const combined = [...transactions, ...gameRecharges].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const combined = [...transactions, ...gameRecharges].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         
-        let finalBalance = game.balance;
-        let runningBalance = finalBalance;
+        // Start with oldest balance and calculate forward
+        let runningBalance = 5000; // Game initial balance (you can make this dynamic)
         
         const calculatedRows: ReportRow[] = combined.map(tx => {
             let balanceBefore, balanceAfter;
             
             // Use points field if available (for new transactions), otherwise use amount
             const transactionAmount = 'points' in tx ? tx.points : ('amount' in tx ? tx.amount : 0);
-            const isCreditToGame = tx.type === 'Withdraw' || tx.type === 'Recharge'
+            const isMoneyFromGame = tx.type === 'Deposit' || tx.type === 'Freeplay' || tx.type === 'Bonusplay' || tx.type === 'Referral';
+            const isMoneyToGame = tx.type === 'Withdraw' || tx.type === 'Recharge';
             
             console.log("🔍 Processing transaction:", {
                 id: tx.id,
                 type: tx.type,
                 amount: 'amount' in tx ? tx.amount : 'N/A',
                 points: 'points' in tx ? tx.points : 'N/A',
-                transactionAmount: transactionAmount
+                transactionAmount: transactionAmount,
+                isMoneyFromGame: isMoneyFromGame,
+                currentBalance: runningBalance
             });
             
-            balanceAfter = runningBalance;
+            // Current balance becomes "before" balance
+            balanceBefore = runningBalance;
             
-            if (isCreditToGame) {
-                balanceBefore = runningBalance - transactionAmount;
-            } else { // Deposit, Freeplay, etc.
-                balanceBefore = runningBalance + transactionAmount;
+            // Calculate new balance based on transaction type
+            if (isMoneyFromGame) {
+                // Deposit/Freeplay/Referral: Money goes FROM game (balance decreases)
+                balanceAfter = runningBalance - transactionAmount;
+            } else if (isMoneyToGame) {
+                // Withdraw/Recharge: Money comes TO game (balance increases)  
+                balanceAfter = runningBalance + transactionAmount;
+            } else {
+                // Unknown transaction type
+                balanceAfter = runningBalance;
             }
             
-            runningBalance = balanceBefore;
+            // Update running balance for next iteration
+            runningBalance = balanceAfter;
             
             return {
                 id: tx.id,
@@ -146,13 +157,14 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
                 player: 'playerName' in tx ? tx.playerName : 'SYSTEM',
                 staff: 'staffName' in tx ? (tx.staffName || 'SYSTEM') : 'SYSTEM',
                 type: tx.type,
-                points: transactionAmount,
+                points: isMoneyFromGame ? -transactionAmount : transactionAmount, // Negative for money FROM game
                 balanceBefore: balanceBefore,
                 balanceAfter: balanceAfter
             };
         });
 
-        setReportRows(calculatedRows);
+        // Reverse the rows to show latest transactions first (for display only)
+        setReportRows(calculatedRows.reverse());
         setIsLoading(false);
       };
 
