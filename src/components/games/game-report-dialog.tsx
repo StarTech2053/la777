@@ -108,12 +108,12 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
       };
 
       const processTransactions = (transactions: Transaction[]) => {
-        // Combine transactions and recharges, then sort OLDEST FIRST for correct calculation
+        // Combine transactions and recharges, then sort LATEST FIRST for reverse calculation
         const gameRecharges = (game.rechargeHistory || []).map(r => ({ ...r, id: `recharge-${r.date}` }));
-        const combined = [...transactions, ...gameRecharges].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const combined = [...transactions, ...gameRecharges].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
-        // Start with oldest balance and calculate forward
-        let runningBalance = 5000; // Game initial balance (you can make this dynamic)
+        // Start with current game balance and calculate backwards
+        let runningBalance = game.balance; // Use actual current game balance
         
         const calculatedRows: ReportRow[] = combined.map(tx => {
             let balanceBefore, balanceAfter;
@@ -133,23 +133,23 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
                 currentBalance: runningBalance
             });
             
-            // Current balance becomes "before" balance
-            balanceBefore = runningBalance;
+            // Current balance becomes "after" balance (since we're going backwards)
+            balanceAfter = runningBalance;
             
-            // Calculate new balance based on transaction type
+            // Calculate previous balance based on transaction type (reverse logic)
             if (isMoneyFromGame) {
-                // Deposit/Freeplay/Referral: Money goes FROM game (balance decreases)
-                balanceAfter = runningBalance - transactionAmount;
+                // Deposit/Freeplay/Referral: Money went FROM game, so before balance was MORE
+                balanceBefore = runningBalance + transactionAmount;
             } else if (isMoneyToGame) {
-                // Withdraw/Recharge: Money comes TO game (balance increases)  
-                balanceAfter = runningBalance + transactionAmount;
+                // Withdraw/Recharge: Money came TO game, so before balance was LESS  
+                balanceBefore = runningBalance - transactionAmount;
             } else {
                 // Unknown transaction type
-                balanceAfter = runningBalance;
+                balanceBefore = runningBalance;
             }
             
-            // Update running balance for next iteration
-            runningBalance = balanceAfter;
+            // Update running balance for next iteration (going backwards)
+            runningBalance = balanceBefore;
             
             return {
                 id: tx.id,
@@ -163,8 +163,8 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
             };
         });
 
-        // Reverse the rows to show latest transactions first (for display only)
-        setReportRows(calculatedRows.reverse());
+        // Rows are already in latest-first order
+        setReportRows(calculatedRows);
         setIsLoading(false);
       };
 

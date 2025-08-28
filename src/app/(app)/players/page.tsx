@@ -173,35 +173,59 @@ export default function PlayersPage() {
     }
   }
 
-  // Sort players by latest activity and join date
+  // Sort players: recent activity first, then new players, then by join date
   const sortedPlayers = React.useMemo(() => {
     const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
     
-    return players.sort((a, b) => {
-      // Get latest transaction for each player
-      const playerATransactions = transactions.filter((t: Transaction) => t.playerName === a.name);
-      const playerBTransactions = transactions.filter((t: Transaction) => t.playerName === b.name);
+    const sorted = [...players].sort((a, b) => {
+      // Check for recent activity (transactions within last 5 minutes)
+      const aLastActivity = a.lastActivity ? new Date(a.lastActivity) : new Date(0);
+      const bLastActivity = b.lastActivity ? new Date(b.lastActivity) : new Date(0);
       
-      const latestATransaction = playerATransactions.length > 0 
-        ? new Date(Math.max(...playerATransactions.map((t: Transaction) => new Date(t.date).getTime())))
-        : new Date(0);
+      const aHasRecentActivity = aLastActivity > fiveMinutesAgo;
+      const bHasRecentActivity = bLastActivity > fiveMinutesAgo;
       
-      const latestBTransaction = playerBTransactions.length > 0 
-        ? new Date(Math.max(...playerBTransactions.map((t: Transaction) => new Date(t.date).getTime())))
-        : new Date(0);
+      // If one has recent activity and other doesn't, prioritize recent activity
+      if (aHasRecentActivity && !bHasRecentActivity) return -1;
+      if (!aHasRecentActivity && bHasRecentActivity) return 1;
       
-      // Sort by latest activity first, then by join date
-      if (latestATransaction.getTime() !== latestBTransaction.getTime()) {
-        return latestBTransaction.getTime() - latestATransaction.getTime();
+      // If both have recent activity, sort by lastActivity (most recent first)
+      if (aHasRecentActivity && bHasRecentActivity) {
+        return bLastActivity.getTime() - aLastActivity.getTime();
       }
       
-      // If no recent activity, sort by join date
+      // If neither has recent activity, sort by creation date (newest players first)
+      if (a.createdAt && b.createdAt) {
+        const createdAtA = new Date(a.createdAt);
+        const createdAtB = new Date(b.createdAt);
+        const timeDiff = createdAtB.getTime() - createdAtA.getTime();
+        if (timeDiff !== 0) return timeDiff;
+      }
+      
+      // Fallback to joinDate
       const joinDateA = new Date(a.joinDate);
       const joinDateB = new Date(b.joinDate);
-      return joinDateB.getTime() - joinDateA.getTime();
+      const joinTimeDiff = joinDateB.getTime() - joinDateA.getTime();
+      if (joinTimeDiff !== 0) return joinTimeDiff;
+      
+      // Final fallback to lastActivity (for older players)
+      return bLastActivity.getTime() - aLastActivity.getTime();
     });
-  }, [players, transactions]);
+    
+    // Debug: Log first 3 players to see sorting order
+    console.log("🔍 Players sorted order (first 3):", 
+      sorted.slice(0, 3).map(p => ({
+        name: p.name,
+        joinDate: p.joinDate,
+        createdAt: p.createdAt,
+        lastActivity: p.lastActivity,
+        recentActivity: p.lastActivity ? new Date(p.lastActivity) > fiveMinutesAgo : false
+      }))
+    );
+    
+    return sorted;
+  }, [players]);
 
   const filteredPlayers = React.useMemo(() => {
     let filtered = sortedPlayers;

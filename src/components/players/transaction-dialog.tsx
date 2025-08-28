@@ -69,6 +69,7 @@ export function TransactionDialog({
      date: string;
    }[]>([]);
   const [totalPendingWithdraw, setTotalPendingWithdraw] = React.useState(0);
+  const [totalPaidAmount, setTotalPaidAmount] = React.useState(0);
   const [activeTags, setActiveTags] = React.useState<PaymentTag[]>([]);
 
   const {
@@ -105,14 +106,19 @@ export function TransactionDialog({
           const data = doc.data();
           const originalAmount = data.amount || 0;
           const paidAmount = data.paidAmount || 0;
-          const pendingAmount = data.pendingAmount || (originalAmount - paidAmount);
+          const depositAmount = data.depositAmount || 0;
+          
+          // ✅ CORRECT CALCULATION: Same as payments section
+          // Pending = Original - Paid - Deposits used for this withdrawal
+          const pendingAmount = Math.max(0, originalAmount - paidAmount - depositAmount);
           
           console.log("🔍 Withdraw Request Data:", {
             id: doc.id,
             originalAmount: originalAmount,
             paidAmount: paidAmount,
+            depositAmount: depositAmount,
             pendingAmount: pendingAmount,
-            calculatedPending: originalAmount - paidAmount
+            calculatedPending: `${originalAmount} - ${paidAmount} - ${depositAmount} = ${pendingAmount}`
           });
           
                      return {
@@ -120,7 +126,7 @@ export function TransactionDialog({
              amount: originalAmount,
              paidAmount: paidAmount,
              pendingAmount: pendingAmount,
-             depositAmount: data.depositAmount || 0,
+             depositAmount: depositAmount,
              date: data.date
            };
         });
@@ -132,8 +138,18 @@ export function TransactionDialog({
           return sum + req.pendingAmount;
         }, 0);
         
-        console.log("💰 Total Pending Withdraw:", totalPending);
+        // Calculate total paid amount from all pending requests
+        const totalPaid = requests.reduce((sum, req) => {
+          return sum + (req.paidAmount || 0);
+        }, 0);
+        
+        console.log("💰 Withdraw Summary:", {
+          totalPending: totalPending,
+          totalPaid: totalPaid,
+          requestCount: requests.length
+        });
         setTotalPendingWithdraw(totalPending);
+        setTotalPaidAmount(totalPaid);
       });
 
       return () => unsubscribe();
@@ -541,18 +557,23 @@ export function TransactionDialog({
                <div className="space-y-2">
                  <Label htmlFor="pending-requests">Pending Withdraw Requests</Label>
                  <div id="pending-requests" className="space-y-2 max-h-32 overflow-y-auto p-3 bg-muted rounded-lg">
-                   {pendingWithdrawRequests.map((request) => (
-                     <div key={request.id} className="flex justify-between items-center text-sm">
-                       <span>Request #{request.id.slice(-6)}</span>
-                       <span className="text-red-500">${request.amount?.toLocaleString()}</span>
-                     </div>
-                   ))}
-                   <div className="border-t pt-2 mt-2">
-                     <div className="flex justify-between items-center font-semibold">
-                       <span>Total Pending:</span>
-                       <span className="text-orange-600">${totalPendingWithdraw.toLocaleString()}</span>
-                     </div>
-                   </div>
+                                       {pendingWithdrawRequests.map((request) => (
+                      <div key={request.id} className="flex justify-between items-center text-sm">
+                        <span>Request #{request.id.slice(-6)}</span>
+                        <span className="text-red-500">${request.amount?.toLocaleString()}</span>
+                      </div>
+                    ))}
+                    {/* Summary section with Paid and Total Pending */}
+                    <div className="border-t pt-2 mt-2 space-y-1">
+                      <div className="flex justify-between items-center font-semibold">
+                        <span>Paid:</span>
+                        <span className="text-green-600">${totalPaidAmount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center font-semibold">
+                        <span>Total Pending:</span>
+                        <span className="text-orange-600">${totalPendingWithdraw.toLocaleString()}</span>
+                      </div>
+                    </div>
                  </div>
                </div>
              )}

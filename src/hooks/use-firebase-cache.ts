@@ -128,7 +128,7 @@ export function useFirebaseDocument<T>(
 // Utility hooks for common collections
 export function usePlayers(options?: { orderBy?: string; limit?: number }) {
   return useFirebaseCollection('players', {
-    orderBy: options?.orderBy || 'joinDate', // Sort by joinDate by default
+    orderBy: options?.orderBy || 'joinDate', // Sort by joinDate by default (descending - newest first)
     ...options
   });
 }
