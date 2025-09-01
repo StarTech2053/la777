@@ -18,14 +18,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { collection, addDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+// import { addGame } from "@/app/(app)/games/actions"; // Removed - using direct Firebase
 import { useGames } from "@/hooks/use-firebase-cache";
 import Image from "next/image";
 
 const formSchema = z.object({
   name: z.string().min(1, "Game Name is required"),
-  imageUrl: z.string().min(1, "Image is required"),
+  imageFile: z.any().optional(), // File object for upload
+  imageUrl: z.string().optional(), // URL or base64 for existing images
   balance: z.coerce.number().min(0, "Balance must be a positive number"),
   downloadUrl: z.string().min(1, "Please enter a valid Download URL"),
   panelUrl: z.string().min(1, "Please enter a valid Panel URL"),
@@ -39,6 +39,7 @@ export default function AddGamePage() {
   const { toast } = useToast();
   const router = useRouter();
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const { refresh } = useGames(); // Get refresh function from cache
 
   const {
@@ -73,24 +74,80 @@ export default function AddGamePage() {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUri = reader.result as string;
         setValue("imageUrl", dataUri, { shouldValidate: true });
+        setImagePreview(dataUri);
       };
       reader.readAsDataURL(file);
     } else {
-        setValue("imageUrl", "", { shouldValidate: true });
+      setSelectedFile(null);
+      setValue("imageUrl", "", { shouldValidate: true });
+      setImagePreview(null);
     }
   };
 
   const onSubmit = async (data: FormValues) => {
     try {
+      // Validate that we have either a file or an image URL
+      if (!selectedFile && !data.imageUrl) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Please select an image file.",
+        });
+        return;
+      }
+
       console.log("🔄 Adding game to Firestore:", data.name);
       
-      const gameData = {
+      // Process image file directly in client
+      let finalImageUrl = data.imageUrl || "";
+      
+      if (selectedFile) {
+        console.log("🔄 Processing image file directly...");
+        
+        // Convert file to base64 directly
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          
+          reader.onload = () => {
+            const result = reader.result as string;
+            console.log("✅ Base64 conversion successful, length:", result.length);
+            resolve(result);
+          };
+          
+          reader.onerror = () => {
+            console.error("❌ FileReader error");
+            reject(new Error("Failed to read image file"));
+          };
+          
+          reader.readAsDataURL(selectedFile);
+        });
+        
+        try {
+          finalImageUrl = await base64Promise;
+          console.log("✅ Image processed successfully");
+        } catch (uploadError) {
+          console.error("❌ Error processing image:", uploadError);
+          throw new Error("Failed to process image. Please try again.");
+        }
+      }
+      
+      // Validate that we have an image URL
+      if (!finalImageUrl) {
+        throw new Error("Image is required. Please select an image file.");
+      }
+      
+      // Add the game to Firestore directly
+      const { collection, addDoc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      
+      const gameDoc = await addDoc(collection(db, "games"), {
         name: data.name,
-        imageUrl: data.imageUrl,
+        imageUrl: finalImageUrl,
         balance: data.balance,
         downloadUrl: data.downloadUrl,
         panelUrl: data.panelUrl,
@@ -99,11 +156,9 @@ export default function AddGamePage() {
         status: 'Active',
         lastRechargeDate: new Date().toISOString(),
         rechargeHistory: []
-      };
+      });
       
-      const docRef = await addDoc(collection(db, "games"), gameData);
-      
-      console.log("✅ Game added successfully with ID:", docRef.id);
+      console.log("✅ Game added successfully with ID:", gameDoc.id);
       
       // Refresh the cache immediately
       await refresh();
@@ -115,6 +170,7 @@ export default function AddGamePage() {
       });
       
       router.push("/games");
+      
     } catch (error) {
       console.error("❌ Error adding game:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to add game. Please try again.";

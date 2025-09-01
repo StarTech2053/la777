@@ -242,6 +242,35 @@ export async function processReferral(referralData: any) {
         const playerDoc = playerSnap.docs[0];
         const playerName = playerDoc.data().name;
         
+        // Find the referred player name for reference
+        const referredPlayerQuery = query(collection(db, "players"), where("id", "==", referralId));
+        const referredPlayerSnap = await getDocs(referredPlayerQuery);
+        
+        if (referredPlayerSnap.empty) {
+            throw new Error(`Referred player not found.`);
+        }
+        
+        const referredPlayerName = referredPlayerSnap.docs[0].data().name;
+        const referredPlayerStats = referredPlayerSnap.docs[0].data().stats || {};
+        
+        // Check if referred player has made any deposits
+        if (!referredPlayerStats.tDeposit || referredPlayerStats.tDeposit <= 0) {
+            throw new Error(`Referral bonus cannot be given. Player "${referredPlayerName}" has not made any deposits yet.`);
+        }
+        
+        // Check if referral bonus has already been given for this referred player
+        const existingReferralQuery = query(
+            collection(db, 'transactions'), 
+            where("playerName", "==", playerName),
+            where("type", "==", "Referral"),
+            where("referenceId", "==", referredPlayerName)
+        );
+        const existingReferralSnap = await getDocs(existingReferralQuery);
+        
+        if (!existingReferralSnap.empty) {
+            throw new Error(`Referral bonus has already been given for player "${referredPlayerName}".`);
+        }
+        
         // Create transaction document
         const transactionRef = doc(collection(db, 'transactions'));
         const transactionData = {
@@ -253,6 +282,7 @@ export async function processReferral(referralData: any) {
             status: 'Approved' as const,
             amount: amount,
             points: amount, // Store amount as points for games section
+            referenceId: referredPlayerName, // Store referred player name for tracking
             gameBalanceBefore: currentGameBalance,
             gameBalanceAfter: currentGameBalance - amount
         };

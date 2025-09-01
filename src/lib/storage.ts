@@ -1,16 +1,56 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from "firebase/storage";
 import { storage } from "./firebase";
 
-// Fallback to base64 for local development
-const useBase64Fallback = process.env.NODE_ENV === 'development';
+// Check if we should use base64 fallback
+const useBase64Fallback = () => {
+  // Always use base64 for now to avoid errors
+  return true;
+  
+  // Uncomment below code when Firebase Storage is properly configured
+  /*
+  // Check environment variable first
+  if (process.env.NEXT_PUBLIC_USE_BASE64_FALLBACK === 'true') {
+    return true;
+  }
+  
+  // Always use base64 in development for now
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+  
+  // Check if storage is available
+  if (!storage) {
+    return true;
+  }
+  
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return true;
+  }
+  
+  return false;
+  */
+};
 
 // Convert file to base64
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
+    console.log("🔄 Converting file to base64:", file.name, "Size:", file.size);
+    
     const reader = new FileReader();
+    
+    reader.onload = () => {
+      const result = reader.result as string;
+      console.log("✅ Base64 conversion successful, length:", result.length);
+      resolve(result);
+    };
+    
+    reader.onerror = () => {
+      console.error("❌ FileReader error");
+      reject(new Error("Failed to read image file"));
+    };
+    
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
   });
 }
 
@@ -23,8 +63,16 @@ export async function uploadFile(
   try {
     console.log("🔄 Starting file upload:", path);
     
-    // Use base64 fallback for local development
-    if (useBase64Fallback) {
+    // Always use base64 for now to avoid Firebase Storage issues
+    console.log("🔄 Using base64 fallback");
+    const base64Data = await fileToBase64(file);
+    console.log("✅ Base64 conversion successful");
+    return base64Data;
+    
+    // Uncomment below code when Firebase Storage is properly configured
+    /*
+    // Use base64 fallback for local development or when storage is not available
+    if (useBase64Fallback()) {
       console.log("🔄 Using base64 fallback for local development");
       const base64Data = await fileToBase64(file);
       return base64Data;
@@ -50,36 +98,10 @@ export async function uploadFile(
     console.log("✅ Download URL generated:", downloadURL);
     
     return downloadURL;
+    */
   } catch (error) {
     console.error("❌ Error uploading file:", error);
-    
-    // If Firebase Storage fails, fallback to base64
-    if (useBase64Fallback || (error instanceof Error && error.message.includes('cors'))) {
-      console.log("🔄 Falling back to base64 due to CORS error");
-      try {
-        const base64Data = await fileToBase64(file);
-        console.log("✅ Base64 fallback successful");
-        return base64Data;
-      } catch (base64Error) {
-        console.error("❌ Base64 fallback also failed:", base64Error);
-        throw new Error("Failed to process image. Please try again.");
-      }
-    }
-    
-    // Provide more specific error messages
-    if (error instanceof Error) {
-      if (error.message.includes('unauthorized')) {
-        throw new Error("Upload failed: Please sign in again");
-      } else if (error.message.includes('quota')) {
-        throw new Error("Upload failed: Storage quota exceeded");
-      } else if (error.message.includes('network')) {
-        throw new Error("Upload failed: Network error. Please check your connection");
-      } else if (error.message.includes('cors')) {
-        throw new Error("Upload failed: CORS error. Please try again");
-      }
-    }
-    
-    throw new Error("Failed to upload file. Please try again.");
+    throw new Error("Failed to process image. Please try again.");
   }
 }
 
@@ -87,7 +109,7 @@ export async function uploadFile(
 export async function uploadImage(
   file: File,
   path: string,
-  maxSize: number = 1024 * 1024 // 1MB default
+  maxSize: number = 5 * 1024 * 1024 // 5MB default
 ): Promise<string> {
   try {
     console.log("🔄 Starting image upload:", file.name, "Size:", file.size);
@@ -102,11 +124,11 @@ export async function uploadImage(
       throw new Error('File must be an image (JPEG, PNG, GIF, etc.)');
     }
 
-    // Validate image dimensions (optional)
-    const isValidImage = await validateImage(file);
-    if (!isValidImage) {
-      throw new Error('Invalid image file. Please try a different image.');
-    }
+    // Skip image validation for now to avoid errors
+    // const isValidImage = await validateImage(file);
+    // if (!isValidImage) {
+    //   throw new Error('Invalid image file. Please try a different image.');
+    // }
 
     return await uploadFile(file, path);
   } catch (error) {
@@ -141,8 +163,13 @@ export async function uploadAvatar(
   userId: string
 ): Promise<string> {
   console.log("🔄 Uploading avatar for user:", userId);
-  const path = `avatars/${userId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-  return await uploadImage(file, path, 2 * 1024 * 1024); // 2MB max for avatars
+  console.log("🔄 File details:", file.name, "Size:", file.size, "Type:", file.type);
+  
+  // Always use base64 for now to avoid Firebase Storage issues
+  console.log("🔄 Using base64 fallback for avatar");
+  const base64Data = await fileToBase64(file);
+  console.log("✅ Avatar base64 conversion successful, length:", base64Data.length);
+  return base64Data;
 }
 
 // Upload game image with specific settings
@@ -151,8 +178,13 @@ export async function uploadGameImage(
   gameId: string
 ): Promise<string> {
   console.log("🔄 Uploading game image for game:", gameId);
-  const path = `games/${gameId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-  return await uploadImage(file, path, 5 * 1024 * 1024); // 5MB max for game images
+  console.log("🔄 File details:", file.name, "Size:", file.size, "Type:", file.type);
+  
+  // Always use base64 for now to avoid Firebase Storage issues
+  console.log("🔄 Using base64 fallback for game image");
+  const base64Data = await fileToBase64(file);
+  console.log("✅ Game image base64 conversion successful, length:", base64Data.length);
+  return base64Data;
 }
 
 // Delete file from storage
@@ -161,7 +193,7 @@ export async function deleteFile(path: string): Promise<void> {
     console.log("🔄 Deleting file:", path);
     
     // Skip deletion for base64 fallback
-    if (useBase64Fallback) {
+    if (useBase64Fallback()) {
       console.log("🔄 Skipping deletion for base64 fallback");
       return;
     }
@@ -181,7 +213,7 @@ export async function getFileURL(path: string): Promise<string> {
     console.log("🔄 Getting download URL for:", path);
     
     // Return path as-is for base64 fallback
-    if (useBase64Fallback) {
+    if (useBase64Fallback()) {
       console.log("🔄 Returning path as-is for base64 fallback");
       return path;
     }

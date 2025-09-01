@@ -9,9 +9,9 @@ import { Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import type { Game } from "@/lib/types";
-import { doc, deleteDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Recharge } from "@/lib/types";
+import { editGame, deleteGame } from "@/app/(app)/games/actions";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,8 @@ import Image from "next/image";
 
 const formSchema = z.object({
   name: z.string().min(1, "Game Name is required"),
-  imageUrl: z.string().min(1, "Image is required"),
+  imageFile: z.any().optional(), // File object for upload
+  imageUrl: z.string().optional(), // URL or base64 for existing images
   rechargeAmount: z.coerce.number().min(0, "Recharge must be a positive number"),
   downloadUrl: z.string().min(1, "Please enter a valid Download URL"),
   panelUrl: z.string().min(1, "Please enter a valid Panel URL"),
@@ -76,6 +77,7 @@ export function EditGameDialog({
   const { toast } = useToast();
   const { user } = useAuth();
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [currentBalance, setCurrentBalance] = React.useState(0);
   const [isNewImageUploaded, setIsNewImageUploaded] = React.useState(false);
@@ -121,6 +123,7 @@ export function EditGameDialog({
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       setIsNewImageUploaded(true);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -129,6 +132,9 @@ export function EditGameDialog({
         setImagePreview(dataUri);
       };
       reader.readAsDataURL(file);
+    } else {
+      setSelectedFile(null);
+      setIsNewImageUploaded(false);
     }
   };
 
@@ -138,43 +144,45 @@ export function EditGameDialog({
     try {
       console.log("🔄 Updating game:", game.id, "Recharge amount:", data.rechargeAmount);
       
-      const gameRef = doc(db, "games", game.id);
-      const newBalance = game.balance + data.rechargeAmount;
-      
-      const updateData: { [key: string]: any } = {
+      const result = await editGame(game, {
+        id: game.id,
         name: data.name,
+        imageFile: selectedFile || undefined,
         imageUrl: data.imageUrl,
+        rechargeAmount: data.rechargeAmount,
         downloadUrl: data.downloadUrl,
         panelUrl: data.panelUrl,
         username: data.username,
         password: data.password,
         status: data.status,
-        balance: newBalance,
-      };
-
-      if (data.rechargeAmount > 0) {
-        const newRecharge: Recharge = {
-          date: new Date().toISOString(),
-          amount: data.rechargeAmount,
-          type: 'Recharge',
-          staffName: user?.email || 'Unknown User', // Add staff name
-        };
-        updateData.rechargeHistory = arrayUnion(newRecharge);
-        updateData.lastRechargeDate = new Date().toISOString();
-        console.log("🔄 Adding recharge to history:", newRecharge);
-      }
-      
-      await updateDoc(gameRef, updateData);
-      console.log("✅ Game updated successfully");
-
-      toast({
-        variant: "success",
-        title: "Success",
-        description: `Game "${data.name}" has been updated successfully.${data.rechargeAmount > 0 ? ` Balance: $${game.balance.toLocaleString()} → $${newBalance.toLocaleString()}` : ''}`,
       });
 
-      onOpenChange(false);
-      onSuccess(allGames.map(g => g.id === game.id ? { ...g, ...updateData } : g));
+      if (result.success) {
+        const newBalance = game.balance + data.rechargeAmount;
+        const updateData = {
+          name: data.name,
+          imageUrl: data.imageUrl,
+          downloadUrl: data.downloadUrl,
+          panelUrl: data.panelUrl,
+          username: data.username,
+          password: data.password,
+          status: data.status,
+          balance: newBalance,
+        };
+
+        console.log("✅ Game updated successfully");
+
+        toast({
+          variant: "success",
+          title: "Success",
+          description: `Game "${data.name}" has been updated successfully.${data.rechargeAmount > 0 ? ` Balance: $${game.balance.toLocaleString()} → $${newBalance.toLocaleString()}` : ''}`,
+        });
+
+        onOpenChange(false);
+        onSuccess(allGames.map(g => g.id === game.id ? { ...g, ...updateData } : g));
+      } else {
+        throw new Error(result.error || "Failed to update game");
+      }
     } catch (error) {
       console.error("❌ Error updating game:", error);
       const errorMessage =
@@ -193,17 +201,20 @@ export function EditGameDialog({
     if (!game) return;
     setIsDeleting(true);
     try {
-      const gameRef = doc(db, "games", game.id);
-      await deleteDoc(gameRef);
+      const result = await deleteGame(game.id);
       
-      toast({
-        variant: "success",
-        title: "Success",
-        description: `Game "${game.name}" has been deleted successfully.`,
-      });
-      
-      onOpenChange(false);
-      onDelete(allGames.filter(g => g.id !== game.id));
+      if (result.success) {
+        toast({
+          variant: "success",
+          title: "Success",
+          description: `Game "${game.name}" has been deleted successfully.`,
+        });
+        
+        onOpenChange(false);
+        onDelete(allGames.filter(g => g.id !== game.id));
+      } else {
+        throw new Error(result.error || "Failed to delete game");
+      }
     } catch (error) {
       console.error("Error deleting game:", error);
       const errorMessage =

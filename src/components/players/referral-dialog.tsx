@@ -108,22 +108,39 @@ export function ReferralDialog({
   const availableReferrals = React.useMemo(() => {
     if (!player) return [];
     
+    // Check if referral bonus has already been given for each referred player
+    const checkReferralBonusGiven = (referredPlayerName: string) => {
+      const referralTransactions = transactions.filter(t => 
+        t.playerName === player.name && 
+        t.type === 'Referral' && 
+        t.referenceId === referredPlayerName
+      );
+      return referralTransactions.length > 0;
+    };
+    
     // If a specific referral player is selected, only show that player
     if (selectedReferralPlayer) {
       const playerTransactions = transactions.filter(t => t.playerName === selectedReferralPlayer.name && t.type === 'Deposit');
       const firstDepositTransaction = playerTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
       const firstDepositAmount = firstDepositTransaction ? firstDepositTransaction.amount : 0;
       
-      return [{
-        id: selectedReferralPlayer.id,
-        name: selectedReferralPlayer.name,
-        joinDate: selectedReferralPlayer.joinDate,
-        tDeposit: selectedReferralPlayer.stats.tDeposit,
-        tWithdraw: selectedReferralPlayer.stats.tWithdraw,
-        pAndL: selectedReferralPlayer.stats.pAndL,
-        firstDeposit: firstDepositAmount,
-        bonusGiven: false
-      }];
+      // Check if bonus already given for this specific player
+      const bonusAlreadyGiven = checkReferralBonusGiven(selectedReferralPlayer.name);
+      
+      // Only show if player has deposits AND bonus not already given
+      if (selectedReferralPlayer.stats.tDeposit > 0 && !bonusAlreadyGiven) {
+        return [{
+          id: selectedReferralPlayer.id,
+          name: selectedReferralPlayer.name,
+          joinDate: selectedReferralPlayer.joinDate,
+          tDeposit: selectedReferralPlayer.stats.tDeposit,
+          tWithdraw: selectedReferralPlayer.stats.tWithdraw,
+          pAndL: selectedReferralPlayer.stats.pAndL,
+          firstDeposit: firstDepositAmount,
+          bonusGiven: bonusAlreadyGiven
+        }];
+      }
+      return [];
     }
     
     // Otherwise, show all eligible referrals
@@ -131,13 +148,15 @@ export function ReferralDialog({
     
     return referredPlayers.filter(refPlayer => {
       const hasDeposits = refPlayer.stats.tDeposit > 0;
-      const bonusGiven = false;
+      const bonusAlreadyGiven = checkReferralBonusGiven(refPlayer.name);
       
-      return hasDeposits && !bonusGiven;
+      return hasDeposits && !bonusAlreadyGiven;
     }).map(refPlayer => {
       const playerTransactions = transactions.filter(t => t.playerName === refPlayer.name && t.type === 'Deposit');
       const firstDepositTransaction = playerTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
       const firstDepositAmount = firstDepositTransaction ? firstDepositTransaction.amount : 0;
+      
+      const bonusAlreadyGiven = checkReferralBonusGiven(refPlayer.name);
       
       return {
         id: refPlayer.id,
@@ -147,7 +166,7 @@ export function ReferralDialog({
         tWithdraw: refPlayer.stats.tWithdraw,
         pAndL: refPlayer.stats.pAndL,
         firstDeposit: firstDepositAmount,
-        bonusGiven: false
+        bonusGiven: bonusAlreadyGiven
       };
     });
   }, [player, players, transactions, selectedReferralPlayer]);
