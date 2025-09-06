@@ -383,6 +383,13 @@ export function PaymentsTable({ title, description }: { title: string, descripti
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    toast({
+        variant: "success",
+        title: "Export Successful",
+        description: `Exported ${transactionsToExport.length} transactions to CSV.`,
+    });
+    
     setIsDateRangePickerOpen(false);
   };
 

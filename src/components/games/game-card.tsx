@@ -33,7 +33,7 @@ export function GameCard({ game, onEdit, onReport }: GameCardProps) {
 
   const statusVariant = {
     Active: "success",
-    Inactive: "secondary",
+    Inactive: "warning",
     Disabled: "destructive",
   } as const;
 

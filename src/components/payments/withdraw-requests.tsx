@@ -183,6 +183,7 @@ export function WithdrawRequests() {
     window.URL.revokeObjectURL(url);
     
     toast({
+      variant: "success",
       title: "Export Successful",
       description: `Exported ${requestsToExport.length} withdraw requests to CSV.`,
     });

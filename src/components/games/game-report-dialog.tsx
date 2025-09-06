@@ -265,6 +265,7 @@ export function GameReportDialog({ isOpen, onOpenChange, game }: GameReportDialo
     window.URL.revokeObjectURL(url);
     
     toast({
+        variant: "success",
         title: "Export Successful",
         description: `Exported ${transactionsToExport.length} transactions to CSV.`,
     });
