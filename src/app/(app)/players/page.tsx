@@ -5,7 +5,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PlayersTable } from "@/components/players/players-table";
-import { UserPlus, Trash2, Users, UserCheck, UserX, UserMinus } from "lucide-react";
+import { UserPlus, Trash2, Users, UserCheck, UserX, UserMinus, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -27,6 +27,8 @@ import { ReferralDialog } from "@/components/players/referral-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlayersStore } from "@/hooks/use-players-store";
 import { useFirebaseCollection } from "@/hooks/use-firebase-cache";
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -300,6 +302,19 @@ export default function PlayersPage() {
     await refreshAndClose();
   }
 
+  // Function to update player status to inactive
+  const updatePlayerStatusToInactive = async (playerId: string) => {
+    try {
+      const playerRef = doc(db, 'players', playerId);
+      await updateDoc(playerRef, {
+        status: 'Inactive'
+      });
+      console.log(`✅ Player ${playerId} status updated to Inactive`);
+    } catch (error) {
+      console.error(`❌ Error updating player ${playerId} status:`, error);
+    }
+  };
+
 
   const isAddUserDisabled = selectionCount > 0;
   const isDeleteDisabled = selectionCount === 0;
@@ -314,6 +329,58 @@ export default function PlayersPage() {
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
+
+  // Automatic player status update - check every 30 seconds
+  React.useEffect(() => {
+    const checkAndUpdatePlayerStatus = () => {
+      const now = new Date();
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+      
+      // Find active players who haven't had any transactions in the last 5 minutes
+      const activePlayersToUpdate = players.filter(player => {
+        if (player.status !== 'Active') return false;
+        
+        // Check if player has any recent transactions
+        const playerTransactions = transactions.filter(transaction => 
+          transaction.playerName === player.name || 
+          transaction.playerTag === player.name
+        );
+        
+        if (playerTransactions.length === 0) {
+          // No transactions at all, check join date
+          const joinDate = new Date(player.joinDate);
+          return joinDate < fiveMinutesAgo;
+        }
+        
+        // Check last transaction date
+        const lastTransaction = playerTransactions.sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        )[0];
+        
+        const lastTransactionDate = new Date(lastTransaction.date);
+        return lastTransactionDate < fiveMinutesAgo;
+      });
+      
+      // Update status for players who should be inactive
+      activePlayersToUpdate.forEach(player => {
+        updatePlayerStatusToInactive(player.id);
+      });
+      
+      if (activePlayersToUpdate.length > 0) {
+        console.log(`🔄 Auto-updated ${activePlayersToUpdate.length} players to Inactive status`);
+        // Refresh players data to reflect the changes
+        refreshPlayers();
+      }
+    };
+
+    // Run immediately
+    checkAndUpdatePlayerStatus();
+    
+    // Set up interval to check every 30 seconds
+    const interval = setInterval(checkAndUpdatePlayerStatus, 30000);
+    
+    return () => clearInterval(interval);
+  }, [players, transactions, refreshPlayers]);
 
   // Debug logging for table data
   console.log("🔍 Table data debug:", {
@@ -392,6 +459,9 @@ export default function PlayersPage() {
           </Button>
           <Button variant="destructive" disabled={isDeleteDisabled} onClick={() => handleDelete()}>
             <Trash2 className="mr-2 h-4 w-4" /> Delete
+          </Button>
+          <Button variant="outline" onClick={handleManualRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
           </Button>
           <Button disabled={isAddUserDisabled} onClick={handleAddUser}>
             <UserPlus className="mr-2 h-4 w-4" /> Add Player

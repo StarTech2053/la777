@@ -340,7 +340,10 @@ export function TransactionDialog({
         // You might want to check player's balance here if needed
       }
       
-      let playerUpdate: { [key: string]: any } = { lastActivity: new Date().toISOString() };
+      let playerUpdate: { [key: string]: any } = { 
+        lastActivity: new Date().toISOString(),
+        status: 'Active' // Automatically set player status to Active when transaction occurs
+      };
       let gameUpdate: { [key: string]: any } = {};
 
       if (transactionType === 'Deposit') {

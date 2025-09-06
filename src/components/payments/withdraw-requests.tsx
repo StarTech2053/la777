@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MoreHorizontal, Copy, FileText, Loader2 } from 'lucide-react';
+import { Search, MoreHorizontal, Copy, FileText, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDocs, addDoc } from 'firebase/firestore';
@@ -39,6 +39,7 @@ export function WithdrawRequests() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [selectedPaymentHistory, setSelectedPaymentHistory] = useState<WithdrawRequest | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
   const { clearNotification } = useWithdrawNotifications();
 
@@ -319,6 +320,20 @@ export function WithdrawRequests() {
     }
   };
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    // Force re-fetch by updating a dummy state
+    setWithdrawRequests([]);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast({
+        variant: "success",
+        title: "Refreshed",
+        description: "Withdraw requests data has been refreshed.",
+      });
+    }, 1000);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -360,6 +375,9 @@ export function WithdrawRequests() {
                      </div>
                      <Button variant="outline" onClick={() => setIsDateRangePickerOpen(true)} disabled={filteredRequests.length === 0}>
                        <FileText className="mr-2 h-4 w-4" /> Report
+                     </Button>
+                     <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+                       <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
                      </Button>
                    </div>
                                        <TabsList className="grid w-full max-w-sm grid-cols-5">

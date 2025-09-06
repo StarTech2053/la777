@@ -176,8 +176,9 @@ export async function processCredit(creditData: any) {
             playerUpdate['stats.tBonusPlay'] = increment(amount);
         }
         
-        // Update player's last activity
+        // Update player's last activity and set status to Active
         playerUpdate['lastActivity'] = new Date().toISOString();
+        playerUpdate['status'] = 'Active'; // Automatically set player status to Active when credit is given
         
         // Update game balance (deduct the amount)
         const gameUpdate = {
@@ -291,7 +292,8 @@ export async function processReferral(referralData: any) {
         const playerRef = doc(db, 'players', playerId);
         const playerUpdate = {
             'stats.tReferralBonus': increment(amount),
-            'lastActivity': new Date().toISOString()
+            'lastActivity': new Date().toISOString(),
+            'status': 'Active' // Automatically set player status to Active when referral bonus is given
         };
         
         // Update game balance (deduct the amount)

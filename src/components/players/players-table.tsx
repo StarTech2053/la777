@@ -98,7 +98,7 @@ export function PlayersTable({
   
   const playerStatusVariant = {
       Active: 'success' as const,
-      Inactive: 'secondary' as const,
+      Inactive: 'warning' as const,
       Blocked: 'destructive' as const,
   };
 
