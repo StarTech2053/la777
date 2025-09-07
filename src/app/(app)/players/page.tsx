@@ -5,7 +5,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PlayersTable } from "@/components/players/players-table";
-import { UserPlus, Trash2, Users, UserCheck, UserX, UserMinus, RefreshCw } from "lucide-react";
+import { UserPlus, Trash2, Users, UserCheck, UserX, UserMinus, RefreshCw, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -29,6 +29,7 @@ import { usePlayersStore } from "@/hooks/use-players-store";
 import { useFirebaseCollection } from "@/hooks/use-firebase-cache";
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { format } from 'date-fns';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -302,6 +303,60 @@ export default function PlayersPage() {
     await refreshAndClose();
   }
 
+  const handleExportPlayers = () => {
+    if (players.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Data",
+        description: "No players found to export.",
+      });
+      return;
+    }
+
+    // Create CSV headers
+    const headers = ['Player Name', 'Status', 'Facebook URL', 'Register Date', 'Total Deposit Amount', 'Total Withdraw Amount', 'P&L'];
+    
+    // Create CSV rows
+    const csvRows = [
+      headers.join(','),
+      ...players.map(player => {
+        const stats = player.stats || {
+          tDeposit: 0,
+          tWithdraw: 0,
+          pAndL: 0
+        };
+        
+        return [
+          `"${player.name}"`,
+          player.status,
+          `"${player.facebookUrl}"`,
+          format(new Date(player.joinDate), "MM/dd/yyyy"),
+          stats.tDeposit.toLocaleString(),
+          stats.tWithdraw.toLocaleString(),
+          stats.pAndL.toLocaleString()
+        ].join(',');
+      })
+    ];
+    
+    // Create and download CSV
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute('download', `players-export-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      variant: "success",
+      title: "Export Successful",
+      description: `Exported ${players.length} players to CSV.`,
+    });
+  };
+
   // Function to update player status to inactive
   const updatePlayerStatusToInactive = async (playerId: string) => {
     try {
@@ -462,6 +517,9 @@ export default function PlayersPage() {
           </Button>
           <Button variant="outline" onClick={handleManualRefresh} disabled={isRefreshing}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+          <Button variant="outline" onClick={handleExportPlayers} disabled={players.length === 0}>
+            <Download className="mr-2 h-4 w-4" /> Export Players
           </Button>
           <Button disabled={isAddUserDisabled} onClick={handleAddUser}>
             <UserPlus className="mr-2 h-4 w-4" /> Add Player
