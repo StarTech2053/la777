@@ -314,7 +314,7 @@ export default function PlayersPage() {
     }
 
     // Create CSV headers
-    const headers = ['Player Name', 'Status', 'Facebook URL', 'Register Date', 'Total Deposit Amount', 'Total Withdraw Amount', 'P&L'];
+    const headers = ['Player Name', 'Status', 'Facebook URL', 'Register Date', 'Total Deposit Amount', 'Total Withdraw Amount', 'P&L', 'Total Deposit Bonus', 'Total FreePlay', 'Total Bonus Play', 'Total Referral Bonus'];
     
     // Create CSV rows
     const csvRows = [
@@ -323,7 +323,11 @@ export default function PlayersPage() {
         const stats = player.stats || {
           tDeposit: 0,
           tWithdraw: 0,
-          pAndL: 0
+          pAndL: 0,
+          tDepositBonus: 0,
+          tFreePlay: 0,
+          tBonusPlay: 0,
+          tReferralBonus: 0
         };
         
         return [
@@ -333,7 +337,11 @@ export default function PlayersPage() {
           format(new Date(player.joinDate), "MM/dd/yyyy"),
           stats.tDeposit.toLocaleString(),
           stats.tWithdraw.toLocaleString(),
-          stats.pAndL.toLocaleString()
+          stats.pAndL.toLocaleString(),
+          stats.tDepositBonus.toLocaleString(),
+          stats.tFreePlay.toLocaleString(),
+          stats.tBonusPlay.toLocaleString(),
+          stats.tReferralBonus.toLocaleString()
         ].join(',');
       })
     ];
