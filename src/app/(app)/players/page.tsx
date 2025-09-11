@@ -294,7 +294,7 @@ export default function PlayersPage() {
     }
 
     // Create CSV headers
-    const headers = ['Player Name', 'Status', 'Facebook URL', 'Register Date', 'Total Deposit Amount', 'Total Withdraw Amount', 'P&L', 'Total Deposit Bonus', 'Total FreePlay', 'Total Bonus Play', 'Total Referral Bonus'];
+    const headers = ['Player Name', 'Status', 'Facebook URL', 'Register Date', 'Total FreePlay', 'Total Bonus Play', 'Total Referral Bonus', 'Total Deposit Amount', 'Total Deposit Bonus', 'Total Withdraw Amount', 'P&L'];
     
     // Create CSV rows
     const csvRows = [
@@ -312,16 +312,16 @@ export default function PlayersPage() {
         
         return [
           `"${player.name}"`,
-          player.status,
+          `"${player.status}"`,
           `"${player.facebookUrl}"`,
-          format(new Date(player.joinDate), "MM/dd/yyyy"),
-          stats.tDeposit.toLocaleString(),
-          stats.tWithdraw.toLocaleString(),
-          stats.pAndL.toLocaleString(),
-          stats.tDepositBonus.toLocaleString(),
-          stats.tFreePlay.toLocaleString(),
-          stats.tBonusPlay.toLocaleString(),
-          stats.tReferralBonus.toLocaleString()
+          `"${format(new Date(player.joinDate), "MM/dd/yyyy")}"`,
+          `"${stats.tFreePlay.toLocaleString()}"`,
+          `"${stats.tBonusPlay.toLocaleString()}"`,
+          `"${stats.tReferralBonus.toLocaleString()}"`,
+          `"${(stats.tDeposit + stats.tDepositBonus).toLocaleString()}"`,
+          `"${stats.tDepositBonus.toLocaleString()}"`,
+          `"${stats.tWithdraw.toLocaleString()}"`,
+          `"${stats.pAndL.toLocaleString()}"`
         ].join(',');
       })
     ];
