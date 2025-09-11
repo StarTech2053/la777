@@ -5,7 +5,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PlayersTable } from "@/components/players/players-table";
-import { UserPlus, Trash2, Users, UserCheck, UserX, UserMinus, RefreshCw, Download } from "lucide-react";
+import { UserPlus, Trash2, Users, UserCheck, UserX, UserMinus, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -45,7 +45,6 @@ export default function PlayersPage() {
   const [creditType, setCreditType] = React.useState<'Freeplay' | 'Bonusplay'>('Freeplay');
   const [currentPage, setCurrentPage] = React.useState(1);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'Active' | 'Inactive' | 'Blocked' | 'New'>('all');
   
   const router = useRouter();
@@ -65,25 +64,6 @@ export default function PlayersPage() {
     });
   }, [players, isLoading]);
 
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshPlayers();
-      toast({
-        variant: "success",
-        title: "Success",
-        description: "Players data refreshed successfully.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to refresh players data.",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   const handleSelectionChange = (selectedIds: Set<string>) => {
     setSelectedPlayerIds(selectedIds);
@@ -522,9 +502,6 @@ export default function PlayersPage() {
           </Button>
           <Button variant="destructive" disabled={isDeleteDisabled} onClick={() => handleDelete()}>
             <Trash2 className="mr-2 h-4 w-4" /> Delete
-          </Button>
-          <Button variant="outline" onClick={handleManualRefresh} disabled={isRefreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
           </Button>
           <Button variant="outline" onClick={handleExportPlayers} disabled={players.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Export Players

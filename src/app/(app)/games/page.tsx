@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { GameCard } from "@/components/games/game-card";
 import { Input } from "@/components/ui/input";
 import type { Game } from "@/lib/types";
-import { PlusCircle, Loader2, RefreshCw } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
 import { EditGameDialog } from "@/components/games/edit-game-dialog";
 import { GameReportDialog } from "@/components/games/game-report-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +19,6 @@ export default function GamesPage() {
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isReportOpen, setIsReportOpen] = React.useState(false);
   const [selectedGame, setSelectedGame] = React.useState<Game | undefined>(undefined);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { role } = useAuth();
@@ -37,25 +36,6 @@ export default function GamesPage() {
     });
   }, [games, isLoading, error]);
 
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refresh();
-      toast({
-        variant: "success",
-        title: "Success",
-        description: "Games data refreshed successfully.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to refresh games data.",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   const handleEditClick = (game: any) => {
     setSelectedGame(game as Game);
@@ -134,10 +114,6 @@ export default function GamesPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleManualRefresh} disabled={isRefreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
           {role !== 'Agent' && (
             <Button onClick={() => router.push('/games/add')}>
               <PlusCircle className="mr-2 h-4 w-4" /> Add Game
