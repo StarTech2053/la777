@@ -318,7 +318,7 @@ export default function PlayersPage() {
           `"${stats.tFreePlay.toLocaleString()}"`,
           `"${stats.tBonusPlay.toLocaleString()}"`,
           `"${stats.tReferralBonus.toLocaleString()}"`,
-          `"${(stats.tDeposit + stats.tDepositBonus).toLocaleString()}"`,
+          `"${stats.tDeposit.toLocaleString()}"`,
           `"${stats.tDepositBonus.toLocaleString()}"`,
           `"${stats.tWithdraw.toLocaleString()}"`,
           `"${stats.pAndL.toLocaleString()}"`
