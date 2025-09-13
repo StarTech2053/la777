@@ -35,7 +35,7 @@ const formSchema = z.object({
   amount: z.coerce.number().min(0, "Amount must be a non-negative number."),
   tip: z.coerce.number().min(0).optional(),
   depositBonus: z.coerce.number().min(0).optional(),
-  paymentMethod: z.enum(["Chime", "CashApp", "RemainingWithdraw"], { required_error: "Please select a payment method." }),
+  paymentMethod: z.enum(["Chime", "CashApp", "PayPal", "RemainingWithdraw"], { required_error: "Please select a payment method." }),
   paymentTag: z.string().optional(),
   playerTag: z.string().optional(),
   gameName: z.string().min(1, "Please select a gaming account."),
@@ -545,6 +545,7 @@ export function TransactionDialog({
                     <SelectContent>
                       <SelectItem value="Chime">Chime</SelectItem>
                       <SelectItem value="CashApp">CashApp</SelectItem>
+                      <SelectItem value="PayPal">PayPal</SelectItem>
                       {totalPendingWithdraw > 0 && (
                         <SelectItem value="RemainingWithdraw">
                           Remaining Withdraw (${totalPendingWithdraw.toLocaleString()})

@@ -36,7 +36,7 @@ const formSchema = z.object({
   amount: z.coerce.number().positive("Amount must be a positive number."),
   tip: z.coerce.number().min(0).optional(),
   depositBonus: z.coerce.number().min(0).optional(),
-  paymentMethod: z.enum(["Chime", "CashApp"], { required_error: "Please select a payment method." }),
+  paymentMethod: z.enum(["Chime", "CashApp", "PayPal"], { required_error: "Please select a payment method." }),
   paymentTag: z.string().min(1, "Please select a payment tag."),
   gameName: z.string().min(1, "Please select a gaming account."),
 });
@@ -209,6 +209,7 @@ export function TransactionDialog({
                     <SelectContent>
                       <SelectItem value="Chime">Chime</SelectItem>
                       <SelectItem value="CashApp">CashApp</SelectItem>
+                      <SelectItem value="PayPal">PayPal</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

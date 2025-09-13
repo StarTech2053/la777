@@ -31,7 +31,7 @@ import { editTransaction } from "../actions";
 
 const formSchema = z.object({
   amount: z.coerce.number().positive("Amount must be a positive number."),
-  paymentMethod: z.enum(["Chime", "CashApp"]),
+  paymentMethod: z.enum(["Chime", "CashApp", "PayPal"]),
   type: z.enum(["Deposit", "Withdraw"]),
 });
 
@@ -128,13 +128,14 @@ export function EditTransactionDialog({
             </div>
              <div className="space-y-2">
               <Label htmlFor="paymentMethod">Payment Method</Label>
-               <Select onValueChange={(value: "Chime" | "CashApp") => setValue('paymentMethod', value)} defaultValue={transaction?.paymentMethod}>
+               <Select onValueChange={(value: "Chime" | "CashApp" | "PayPal") => setValue('paymentMethod', value)} defaultValue={transaction?.paymentMethod}>
                 <SelectTrigger id="paymentMethod" name="paymentMethod">
                   <SelectValue placeholder="Select method" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Chime">Chime</SelectItem>
                   <SelectItem value="CashApp">CashApp</SelectItem>
+                  <SelectItem value="PayPal">PayPal</SelectItem>
                 </SelectContent>
               </Select>
             </div>

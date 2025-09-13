@@ -35,12 +35,15 @@ export default function PaymentsPage() {
             </div>
         </TabsContent>
         <TabsContent value="tag">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="rounded-lg border shadow-sm">
                 <PaymentTagsCard method="Chime" />
             </div>
             <div className="rounded-lg border shadow-sm">
                 <PaymentTagsCard method="CashApp" />
+            </div>
+            <div className="rounded-lg border shadow-sm">
+                <PaymentTagsCard method="PayPal" />
             </div>
           </div>
         </TabsContent>

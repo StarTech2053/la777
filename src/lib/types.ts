@@ -69,7 +69,7 @@ export type Game = {
 };
 
 
-export type PaymentMethod = 'Chime' | 'CashApp' | 'RemainingWithdraw';
+export type PaymentMethod = 'Chime' | 'CashApp' | 'PayPal' | 'RemainingWithdraw';
 
 export type Transaction = {
   id: string;

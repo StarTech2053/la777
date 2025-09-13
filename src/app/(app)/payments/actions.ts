@@ -8,8 +8,11 @@ import { collection, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestor
 const addTagSchema = z.object({
   tag: z.string()
     .min(2, "Tag must be at least 2 characters")
-    .startsWith('$', "Tag must start with a '$'"),
-  method: z.enum(["Chime", "CashApp"]),
+    .refine((val) => {
+      // PayPal tags start with @, others start with $
+      return val.startsWith('$') || val.startsWith('@');
+    }, "Tag must start with '$' or '@'"),
+  method: z.enum(["Chime", "CashApp", "PayPal"]),
 });
 
 export async function addPaymentTag(data: z.infer<typeof addTagSchema>) {
@@ -53,7 +56,7 @@ export async function deletePaymentTag(tagId: string) {
 const editTransactionSchema = z.object({
     transactionId: z.string(),
     amount: z.coerce.number().positive("Amount must be a positive number."),
-    paymentMethod: z.enum(["Chime", "CashApp"]),
+    paymentMethod: z.enum(["Chime", "CashApp", "PayPal"]),
     type: z.enum(["Deposit", "Withdraw"]),
 });
 

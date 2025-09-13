@@ -26,7 +26,10 @@ import type { PaymentMethod } from "@/lib/types";
 const formSchema = z.object({
   tag: z.string()
     .min(2, "Tag must be at least 2 characters")
-    .startsWith('$', "Tag must start with a '$'"),
+    .refine((val) => {
+      // PayPal tags start with @, others start with $
+      return val.startsWith('$') || val.startsWith('@');
+    }, "Tag must start with '$' or '@'"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -98,7 +101,7 @@ export function AddPaymentTagDialog({
           <DialogHeader>
             <DialogTitle>Add New {method} Tag</DialogTitle>
             <DialogDescription>
-              Enter a new unique tag. It must start with a '$' sign.
+              Enter a new unique tag. {method === 'PayPal' ? "PayPal tags start with '@'" : "Other tags start with '$'"}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -109,7 +112,7 @@ export function AddPaymentTagDialog({
                 name="tag"
                 autoComplete="off"
                 {...register("tag")}
-                placeholder="e.g., $NewTag123"
+                placeholder={method === 'PayPal' ? "e.g., @NewTag123" : "e.g., $NewTag123"}
               />
               {errors.tag && (
                 <p className="text-sm text-destructive">{errors.tag.message}</p>

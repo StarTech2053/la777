@@ -411,10 +411,11 @@ export function PaymentsTable({ title, description }: { title: string, descripti
                  <Button variant="outline" onClick={() => setIsDateRangePickerOpen(true)} disabled={filteredTransactions.length === 0}>
                     <FileText className="mr-2 h-4 w-4" /> Report
                 </Button>
-                <TabsList className="grid w-full max-w-sm grid-cols-3">
+                <TabsList className="grid w-full max-w-sm grid-cols-4">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="chime">Chime</TabsTrigger>
                     <TabsTrigger value="cashapp">CashApp</TabsTrigger>
+                    <TabsTrigger value="paypal">PayPal</TabsTrigger>
                 </TabsList>
             </div>
         </div>
@@ -439,6 +440,15 @@ export function PaymentsTable({ title, description }: { title: string, descripti
           <FilteredTransactionsTable
             transactions={paginatedTransactions}
             filter={(tx) => tx.paymentMethod === 'CashApp'}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            role={role}
+          />
+        </TabsContent>
+        <TabsContent value="paypal">
+          <FilteredTransactionsTable
+            transactions={paginatedTransactions}
+            filter={(tx) => tx.paymentMethod === 'PayPal'}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
             role={role}
