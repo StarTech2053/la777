@@ -373,6 +373,9 @@ export function TransactionDialog({
        // Calculate deposit amount for RemainingWithdraw method
        const depositAmount = data.paymentMethod === 'RemainingWithdraw' ? data.amount : 0;
        
+       // Find the selected gaming account to get gamerId
+       const selectedGamingAccount = player?.gamingAccounts?.find(account => account.gameName === data.gameName);
+       
        // Clean up data to remove undefined values for Firebase
        const cleanData = {
          ...data,
@@ -380,6 +383,7 @@ export function TransactionDialog({
          type: transactionType,
          date: new Date().toISOString(),
          playerName: player.name,
+         gamerId: selectedGamingAccount?.gamerId || null, // Store gaming account ID
          staffName: staffName,
          status: transactionType === 'Withdraw' ? 'pending' : 'Approved',
          gameBalanceBefore: currentGameBalance,

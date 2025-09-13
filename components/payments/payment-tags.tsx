@@ -160,54 +160,97 @@ export function PaymentTagsCard({ method }: { method: PaymentMethod }) {
     });
   };
 
-  const handleExport = (dateRange?: DateRange) => {
-    let tagsToExport = filteredTags;
+  const handleExport = async (dateRange?: DateRange) => {
+    try {
+      // Import Firebase functions
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+      
+      // Query transactions for this payment method
+      let transactionsQuery = query(
+        collection(db, 'transactions'),
+        where('paymentMethod', '==', method)
+      );
 
-    if (dateRange?.from && dateRange?.to) {
+      const transactionsSnapshot = await getDocs(transactionsQuery);
+      let transactions = transactionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Sort by date descending (newest first)
+      transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      // Apply date range filter if provided
+      if (dateRange?.from && dateRange?.to) {
         const fromDate = new Date(dateRange.from);
         const toDate = new Date(dateRange.to);
         toDate.setHours(23, 59, 59, 999);
 
-        tagsToExport = tagsToExport.filter(tag => {
-            const tagDate = new Date(tag.date);
-            return tagDate >= fromDate && tagDate <= toDate;
+        transactions = transactions.filter(tx => {
+          const txDate = new Date(tx.date);
+          return txDate >= fromDate && txDate <= toDate;
         });
-    }
+      }
 
-    if (tagsToExport.length === 0) {
+      if (transactions.length === 0) {
         toast({
-            variant: "destructive",
-            title: "No Data",
-            description: "There are no tags within the selected date range to export.",
+          variant: "destructive",
+          title: "No Data",
+          description: `There are no ${method} transactions within the selected date range to export.`,
         });
         return;
-    }
+      }
 
-
-    const csvHeaders = ["Tag ID", "Date & Time", "Tag", "Status"];
-    const csvRows = [
-      csvHeaders.join(','),
-      ...tagsToExport.map(tag => [
-        tag.id,
-        format(new Date(tag.date), "yyyy-MM-dd HH:mm:ss"),
-        `"${tag.tag}"`,
-        tag.status
-      ].join(','))
-    ];
-    
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.href) {
-      URL.revokeObjectURL(link.href);
+      // Export transactions data
+      const csvHeaders = ["Transaction ID", "Date", "Time", "Player", "Type", "Method", "Tag", "Amount", "Status", "Staff"];
+      const csvRows = [
+        csvHeaders.join(','),
+        ...transactions.map(tx => {
+          const txDate = new Date(tx.date);
+          const dateStr = format(txDate, "yyyy-MM-dd");
+          const timeStr = format(txDate, "h:mm a");
+          
+          return [
+            tx.id,
+            dateStr,
+            timeStr,
+            `"${tx.gamerId || tx.playerName}"`,
+            tx.type,
+            tx.paymentMethod || 'N/A',
+            tx.paymentTag || 'N/A',
+            tx.amount,
+            tx.status,
+            `"${tx.staffName}"`
+          ].join(',');
+        })
+      ];
+      
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.href) {
+        URL.revokeObjectURL(link.href);
+      }
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.setAttribute('download', `${method}-Transactions-Report-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setIsDateRangePickerOpen(false);
+      
+      toast({
+        variant: "success",
+        title: "Export Successful",
+        description: `Exported ${transactions.length} ${method} transactions.`,
+      });
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: "Failed to export transactions. Please try again.",
+      });
     }
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.setAttribute('download', `${method}-Tags-Report-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setIsDateRangePickerOpen(false);
   };
 
 

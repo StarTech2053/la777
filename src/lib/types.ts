@@ -76,6 +76,7 @@ export type Transaction = {
   date: string;
   playerName: string;
   gameName: string;
+  gamerId?: string; // Gaming account name/ID
   type: 'Deposit' | 'Withdraw' | 'Freeplay' | 'Bonusplay' | 'Referral';
   amount: number;
   tip?: number;
