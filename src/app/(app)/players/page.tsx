@@ -178,13 +178,8 @@ export default function PlayersPage() {
         return bLastActivity.getTime() - aLastActivity.getTime();
       }
       
-      // If neither has recent activity, sort by creation date (newest players first)
-      if (a.createdAt && b.createdAt) {
-        const createdAtA = new Date(a.createdAt);
-        const createdAtB = new Date(b.createdAt);
-        const timeDiff = createdAtB.getTime() - createdAtA.getTime();
-        if (timeDiff !== 0) return timeDiff;
-      }
+      // If neither has recent activity, sort by join date (newest players first)
+      // Using joinDate since createdAt doesn't exist in Player type
       
       // Fallback to joinDate
       const joinDateA = new Date(a.joinDate);
@@ -201,7 +196,6 @@ export default function PlayersPage() {
       sorted.slice(0, 3).map(p => ({
         name: p.name,
         joinDate: p.joinDate,
-        createdAt: p.createdAt,
         lastActivity: p.lastActivity,
         recentActivity: p.lastActivity ? new Date(p.lastActivity) > fiveMinutesAgo : false
       }))
@@ -385,8 +379,7 @@ export default function PlayersPage() {
         
         // Check if player has any recent transactions
         const playerTransactions = transactions.filter(transaction => 
-          transaction.playerName === player.name || 
-          transaction.playerTag === player.name
+          transaction.playerName === player.name
         );
         
         if (playerTransactions.length === 0) {
