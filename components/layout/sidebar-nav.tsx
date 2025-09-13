@@ -13,6 +13,7 @@ import {
   Shield,
   Settings,
   CircleDollarSign,
+  UserCheck,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,7 +26,7 @@ const allNavItems: NavItem[] = [
   { title: "Games", href: "/games", icon: Gamepad2 },
   { title: "Payments", href: "/payments", icon: Banknote },
   { title: "Reports", href: "/reports", icon: FileText },
-  { title: "Staff", href: "/staff", icon: Shield },
+  { title: "Users Manage", href: "/staff", icon: UserCheck },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 

@@ -108,13 +108,13 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-semibold md:text-2xl">Staff</h1>
+      <h1 className="text-lg font-semibold md:text-2xl">Users Manage</h1>
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
          <div className="w-full sm:w-auto sm:flex-1">
           <Input 
             id="search-staff"
             name="search-staff"
-            placeholder="Search staff..." 
+            placeholder="Search users..." 
             className="max-w-sm" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

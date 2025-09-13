@@ -16,33 +16,8 @@ const createUser = async (email: string, password: string, displayName: string) 
   try {
     console.log("🔧 Creating user with:", { email, displayName, passwordLength: password.length });
     
-    // First check if user exists in Firestore with deleted status
-    try {
-      const { collection, query, where, getDocs } = await import('firebase/firestore');
-      const { db } = await import('./firebase');
-      
-      const staffQuery = query(
-        collection(db, 'staff'),
-        where('email', '==', email)
-      );
-      const staffSnapshot = await getDocs(staffQuery);
-      
-      if (!staffSnapshot.empty) {
-        const existingStaff = staffSnapshot.docs[0].data();
-        if (existingStaff.status === 'Deleted' || existingStaff.deleted === true) {
-          console.log("🔄 Found deleted staff with same email, allowing recreation:", email);
-          // Delete the old document first
-          const { doc, deleteDoc } = await import('firebase/firestore');
-          await deleteDoc(doc(db, 'staff', staffSnapshot.docs[0].id));
-          console.log("✅ Deleted old staff document");
-        } else {
-          console.log("❌ Active staff with same email exists:", email);
-          throw new Error('This email address is already in use. Please use a different email address.');
-        }
-      }
-    } catch (firestoreError) {
-      console.log("ℹ️ Firestore check failed, proceeding with user creation:", firestoreError);
-    }
+    // Skip Firestore check - let Firebase Auth handle the EMAIL_EXISTS error
+    console.log("✅ Proceeding with direct user creation for:", email);
     
     // Use Firebase REST API to create user
     const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
@@ -62,6 +37,31 @@ const createUser = async (email: string, password: string, displayName: string) 
     if (!response.ok) {
       console.error("❌ Firebase API error:", data);
       if (data.error?.message === 'EMAIL_EXISTS') {
+        // Check if this is a deleted staff member
+        try {
+          const { collection, query, where, getDocs, doc, deleteDoc } = await import('firebase/firestore');
+          const { db } = await import('./firebase');
+          
+          const staffQuery = query(
+            collection(db, 'staff'),
+            where('email', '==', email)
+          );
+          const staffSnapshot = await getDocs(staffQuery);
+          
+          if (!staffSnapshot.empty) {
+            const existingStaff = staffSnapshot.docs[0].data();
+            if (existingStaff.status === 'Deleted' || existingStaff.deleted === true) {
+              console.log("🔄 Found deleted staff, removing old document and retrying:", email);
+              // Delete the old document
+              await deleteDoc(doc(db, 'staff', staffSnapshot.docs[0].id));
+              console.log("✅ Deleted old staff document, please try again");
+              throw new Error('Email was previously used but has been cleared. Please try creating the account again.');
+            }
+          }
+        } catch (firestoreError) {
+          console.log("ℹ️ Firestore check failed:", firestoreError);
+        }
+        
         throw new Error('This email address is already in use. Please use a different email address.');
       } else if (data.error?.message === 'WEAK_PASSWORD') {
         throw new Error('Password should be at least 6 characters.');

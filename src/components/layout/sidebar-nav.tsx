@@ -14,6 +14,7 @@ import {
   Settings,
   CircleDollarSign,
   BookOpen,
+  UserCheck,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -28,7 +29,7 @@ const allNavItems: NavItem[] = [
   { title: "Payments", href: "/payments", icon: Banknote },
   { title: "Reports", href: "/reports", icon: FileText },
   { title: "Rules & Promotion", href: "/rules-promotion", icon: BookOpen },
-  { title: "Staff", href: "/staff", icon: Shield },
+  { title: "Users Manage", href: "/staff", icon: UserCheck },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 
