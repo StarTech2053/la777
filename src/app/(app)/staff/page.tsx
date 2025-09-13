@@ -59,8 +59,12 @@ export default function StaffPage() {
   }, [reloadStaff]);
 
   const filteredStaff = React.useMemo(() => {
-    if (!searchQuery) return staff;
-    return staff.filter(s =>
+    // First filter out deleted staff
+    const activeStaff = staff.filter(s => s.status !== 'Deleted' && !s.deleted);
+    
+    // Then apply search filter
+    if (!searchQuery) return activeStaff;
+    return activeStaff.filter(s =>
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.role.toLowerCase().includes(searchQuery.toLowerCase())

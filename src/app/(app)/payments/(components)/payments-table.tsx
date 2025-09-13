@@ -179,7 +179,7 @@ function FilteredTransactionsTable({
                 {filteredTransactions.map((tx) => (
                     <TableRow key={tx.id}>
                         <TableCell><ClientFormattedDate dateString={tx.date} /></TableCell>
-                        <TableCell>{tx.playerName}</TableCell>
+                        <TableCell>{tx.gameName}</TableCell>
                         <TableCell>
                              <span className={cn(
                                 'capitalize font-semibold',

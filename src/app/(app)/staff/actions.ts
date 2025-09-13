@@ -2,7 +2,7 @@
 "use server";
 
 import { z } from "zod";
-import { adminDb, initializeAdminApp, getAdminDb, createUser } from "@/lib/firebase-admin";
+import { adminDb, initializeAdminApp, getAdminDb, getAdminAuth, createUser } from "@/lib/firebase-admin";
 
 
 const setupAdminSchema = z.object({
@@ -71,8 +71,12 @@ export async function addStaff(data: z.infer<typeof addStaffSchema>) {
   try {
     await initializeAdminApp();
     const db = getAdminDb();
+    const auth = getAdminAuth();
     
     console.log("🔧 Adding staff member:", { email: data.email, name: data.name, role: data.role });
+    
+    // Skip email check - let createUser handle the EMAIL_EXISTS error
+    console.log("✅ Proceeding with user creation for:", data.email);
     
     const userRecord = await createUser(
         data.email,
@@ -170,13 +174,27 @@ export async function deleteStaff(staffIdsToDelete: Set<string>) {
     await initializeAdminApp();
     const db = getAdminDb();
     
-    // Delete from Firestore only (batch operations require Admin SDK)
+    console.log("🗑️ Deleting staff members:", Array.from(staffIdsToDelete));
+    
+    // Mark staff as deleted in Firestore instead of completely removing
     for (const id of staffIdsToDelete) {
-        const docRef = db.collection("staff").doc(id);
-        await docRef.set({}); // This will effectively remove the document content
+        try {
+            // Mark as deleted in Firestore
+            const docRef = db.collection("staff").doc(id);
+            await docRef.set({
+                status: 'Deleted',
+                deleted: true,
+                deletedAt: new Date().toISOString()
+            }, { merge: true });
+            console.log(`✅ Staff ${id} marked as deleted in Firestore`);
+            
+        } catch (userError) {
+            console.error(`❌ Error marking staff ${id} as deleted:`, userError);
+            // Continue with other users even if one fails
+        }
     }
 
-    console.log("✅ Staff deleted from Firestore");
+    console.log("✅ Staff deletion completed");
 
     return { success: true };
   } catch(e) {
